@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { mongooseAdapter } from "@payloadcms/db-mongodb";
 import { lexicalEditor } from "@payloadcms/richtext-lexical";
+import { vercelBlobStorage } from "@payloadcms/storage-vercel-blob";
 import { buildConfig } from "payload";
 import sharp from "sharp";
 import { Games } from "./collections/Games";
@@ -31,5 +32,12 @@ export default buildConfig({
 		url: process.env.DATABASE_URI || "",
 	}),
 	sharp,
-	plugins: [],
+	plugins: [
+		vercelBlobStorage({
+			collections: {
+				media: true,
+			},
+			token: process.env.BLOB_READ_WRITE_TOKEN || "",
+		}),
+	],
 });

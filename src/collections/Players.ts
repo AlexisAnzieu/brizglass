@@ -33,6 +33,14 @@ export const Players: CollectionConfig = {
 			},
 		},
 		{
+			name: "avatar",
+			type: "upload",
+			relationTo: "media",
+			admin: {
+				description: "Player profile picture",
+			},
+		},
+		{
 			name: "game",
 			type: "relationship",
 			relationTo: "games",

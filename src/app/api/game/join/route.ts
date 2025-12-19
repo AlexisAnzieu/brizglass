@@ -17,13 +17,15 @@ function generateToken(): string {
 
 /**
  * POST /api/game/join
- * Join an existing game with a nickname
- * Body: { code: string, nickname: string }
+ * Join an existing game with a nickname and optional avatar
+ * Body: FormData with { code: string, nickname: string, avatar?: File }
  */
 export async function POST(request: NextRequest) {
 	try {
-		const body = await request.json();
-		const { code, nickname } = body;
+		const formData = await request.formData();
+		const code = formData.get("code") as string;
+		const nickname = formData.get("nickname") as string;
+		const avatarFile = formData.get("avatar") as File | null;
 
 		if (!code || !nickname) {
 			return NextResponse.json(
@@ -82,6 +84,24 @@ export async function POST(request: NextRequest) {
 
 		const sessionToken = generateToken();
 
+		// Upload avatar if provided
+		let avatarId: string | undefined;
+		if (avatarFile && avatarFile.size > 0) {
+			const media = await payload.create({
+				collection: "media",
+				data: {
+					alt: `${nickname}'s avatar`,
+				},
+				file: {
+					data: Buffer.from(await avatarFile.arrayBuffer()),
+					mimetype: avatarFile.type,
+					name: avatarFile.name,
+					size: avatarFile.size,
+				},
+			});
+			avatarId = media.id;
+		}
+
 		const player = await payload.create({
 			collection: "players",
 			data: {
@@ -91,6 +111,7 @@ export async function POST(request: NextRequest) {
 				score: 0,
 				hasSubmittedStatements: false,
 				hasBeenGuessed: false,
+				...(avatarId && { avatar: avatarId }),
 			},
 		});
 
