@@ -355,7 +355,7 @@ export default function PlayPage() {
 						</div>
 					)}
 
-					<p className="hint">En attente de l'admin pour continuer...</p>
+					<p className="hint">En attente de l&apos;admin pour continuer...</p>
 				</div>
 			)}
 
@@ -451,7 +451,7 @@ export default function PlayPage() {
 						</div>
 					)}
 
-					<p className="hint">En attente de l'admin pour continuer...</p>
+					<p className="hint">En attente de l&apos;admin pour continuer...</p>
 				</div>
 			)}
 

@@ -323,7 +323,7 @@ export default function AdminPage() {
 						onClick={() => router.push("/")}
 						className="btn btn-secondary"
 					>
-						Retour à l'accueil
+						Retour à l&apos;accueil
 					</button>
 				</div>
 			)}

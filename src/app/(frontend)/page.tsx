@@ -53,7 +53,7 @@ export default function HomePage() {
 			<div className="actions">
 				<div className="action-card">
 					<h2>Créer une partie</h2>
-					<p>Lancez une nouvelle session et invitez d'autres joueurs</p>
+					<p>Lancez une nouvelle session et invitez d&apos;autres joueurs</p>
 					<button
 						type="button"
 						onClick={handleCreateGame}
