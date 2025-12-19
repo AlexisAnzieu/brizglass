@@ -207,7 +207,7 @@ export default function AdminPage() {
 					<div className="game-section">
 						<div className="round-info">
 							<h2>Manche {gameStatus.game.currentRound}</h2>
-							{gameStatus.currentRound && (
+							{gameStatus.currentRound && gameStatus.game.status !== "voting-author" && (
 								<p>
 									Joueur actuel :{" "}
 									<strong>{gameStatus.currentRound.playerNickname}</strong>
@@ -221,11 +221,11 @@ export default function AdminPage() {
 								{gameStatus.currentRound.statements.map((statement, index) => (
 									<div
 										key={statement.id}
-										className={`statement-card ${statement.isTrue !== undefined ? (statement.isTrue ? "true" : "false") : ""}`}
+										className={`statement-card ${gameStatus.game.status === "results-truth" && statement.isTrue !== undefined ? (statement.isTrue ? "true" : "false") : ""}`}
 									>
 										<span className="statement-number">{index + 1}</span>
 										<span className="statement-text">{statement.text}</span>
-										{statement.isTrue !== undefined && (
+										{gameStatus.game.status === "results-truth" && statement.isTrue !== undefined && (
 											<span className="statement-truth">
 												{statement.isTrue ? "✅ VRAI" : "❌ FAUX"}
 											</span>
