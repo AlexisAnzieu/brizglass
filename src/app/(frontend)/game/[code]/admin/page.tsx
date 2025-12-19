@@ -9,6 +9,7 @@ interface Player {
 	nickname: string;
 	score: number;
 	hasSubmittedStatements: boolean;
+	avatarUrl: string | null;
 }
 
 interface GameStatus {
@@ -21,6 +22,7 @@ interface GameStatus {
 	players: Player[];
 	currentRound?: {
 		playerNickname: string;
+		playerAvatarUrl: string | null;
 		playerId: string;
 		statements: { id: string; text: string; order: number; isTrue?: boolean }[];
 		voteResults?: {
@@ -32,6 +34,38 @@ interface GameStatus {
 		votesReceived: number;
 		votesNeeded: number;
 	};
+}
+
+function PlayerAvatar({
+	avatarUrl,
+	nickname,
+	size = "small",
+}: {
+	avatarUrl: string | null;
+	nickname: string;
+	size?: "small" | "medium" | "large";
+}) {
+	const sizeClasses = {
+		small: "avatar-small",
+		medium: "avatar-medium",
+		large: "avatar-large",
+	};
+
+	if (avatarUrl) {
+		return (
+			<img
+				src={avatarUrl}
+				alt={`${nickname}'s avatar`}
+				className={`player-avatar ${sizeClasses[size]}`}
+			/>
+		);
+	}
+
+	return (
+		<div className={`player-avatar-placeholder ${sizeClasses[size]}`}>
+			{nickname.charAt(0).toUpperCase()}
+		</div>
+	);
 }
 
 export default function AdminPage() {
@@ -167,6 +201,11 @@ export default function AdminPage() {
 						<div className="players-list">
 							{gameStatus.players.map((player) => (
 								<div key={player.id} className="player-card">
+									<PlayerAvatar
+										avatarUrl={player.avatarUrl}
+										nickname={player.nickname}
+										size="medium"
+									/>
 									<span className="player-name">{player.nickname}</span>
 									<span
 										className={`player-status ${player.hasSubmittedStatements ? "ready" : "waiting"}`}
@@ -209,9 +248,16 @@ export default function AdminPage() {
 							<h2>Manche {gameStatus.game.currentRound}</h2>
 							{gameStatus.currentRound &&
 								gameStatus.game.status !== "voting-author" && (
-									<p>
+									<p className="current-player-info">
 										Joueur actuel :{" "}
-										<strong>{gameStatus.currentRound.playerNickname}</strong>
+										<span className="author-name">
+											<PlayerAvatar
+												avatarUrl={gameStatus.currentRound.playerAvatarUrl}
+												nickname={gameStatus.currentRound.playerNickname}
+												size="medium"
+											/>
+											<strong>{gameStatus.currentRound.playerNickname}</strong>
+										</span>
 									</p>
 								)}
 						</div>
@@ -287,7 +333,14 @@ export default function AdminPage() {
 								.map((player, index) => (
 									<div key={player.id} className="score-row">
 										<span className="rank">#{index + 1}</span>
-										<span className="player-name">{player.nickname}</span>
+										<span className="player-name">
+											<PlayerAvatar
+												avatarUrl={player.avatarUrl}
+												nickname={player.nickname}
+												size="small"
+											/>
+											{player.nickname}
+										</span>
 										<span className="score">{player.score} pts</span>
 									</div>
 								))}
@@ -328,7 +381,14 @@ export default function AdminPage() {
 															? "🥉"
 															: `#${index + 1}`}
 											</span>
-											<span className="player-name">{player.nickname}</span>
+											<span className="player-name">
+												<PlayerAvatar
+													avatarUrl={player.avatarUrl}
+													nickname={player.nickname}
+													size="medium"
+												/>
+												{player.nickname}
+											</span>
 											<span className="score">{player.score} pts</span>
 										</div>
 									);

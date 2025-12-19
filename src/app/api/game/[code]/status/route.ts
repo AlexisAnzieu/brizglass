@@ -1,6 +1,16 @@
 import config from "@payload-config";
 import { type NextRequest, NextResponse } from "next/server";
 import { getPayload } from "payload";
+import type { Media, Player } from "@/payload-types";
+
+/**
+ * Get avatar URL from player's avatar field
+ */
+function getAvatarUrl(player: Player): string | null {
+	if (!player.avatar) return null;
+	const avatar = player.avatar as Media;
+	return avatar.sizes?.thumbnail?.url || avatar.url || null;
+}
 
 /**
  * GET /api/game/[code]/status
@@ -34,6 +44,7 @@ export async function GET(
 			collection: "players",
 			where: { game: { equals: game.id } },
 			sort: "-score",
+			depth: 1,
 		});
 
 		// Get current player info if session exists
@@ -48,6 +59,7 @@ export async function GET(
 					],
 				},
 				limit: 1,
+				depth: 1,
 			});
 			currentPlayer = playerResult.docs[0] || null;
 		}
@@ -92,6 +104,7 @@ export async function GET(
 			currentRoundPlayer = await payload.findByID({
 				collection: "players",
 				id: game.currentPlayerId,
+				depth: 1,
 			});
 		}
 
@@ -194,6 +207,7 @@ export async function GET(
 				score: p.score,
 				hasSubmittedStatements: p.hasSubmittedStatements,
 				isCurrentRoundPlayer: p.id === game.currentPlayerId,
+				avatarUrl: getAvatarUrl(p),
 			})),
 			currentPlayer: currentPlayer
 				? {
@@ -203,12 +217,16 @@ export async function GET(
 						hasVotedAuthor,
 						hasVotedTruth,
 						isCurrentRoundPlayer: currentPlayer.id === game.currentPlayerId,
+						avatarUrl: getAvatarUrl(currentPlayer),
 					}
 				: null,
 			currentRound:
 				game.currentRound > 0
 					? {
 							playerNickname: currentRoundPlayer?.nickname,
+							playerAvatarUrl: currentRoundPlayer
+								? getAvatarUrl(currentRoundPlayer)
+								: null,
 							playerId: game.currentPlayerId,
 							statements: currentStatements,
 							voteResults,

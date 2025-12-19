@@ -16,6 +16,7 @@ interface Player {
 	score: number;
 	hasSubmittedStatements: boolean;
 	isCurrentRoundPlayer: boolean;
+	avatarUrl: string | null;
 }
 
 interface CurrentPlayer {
@@ -25,6 +26,7 @@ interface CurrentPlayer {
 	hasVotedAuthor: boolean;
 	hasVotedTruth: boolean;
 	isCurrentRoundPlayer: boolean;
+	avatarUrl: string | null;
 }
 
 interface GameStatus {
@@ -38,6 +40,7 @@ interface GameStatus {
 	currentPlayer: CurrentPlayer | null;
 	currentRound?: {
 		playerNickname: string;
+		playerAvatarUrl: string | null;
 		playerId: string;
 		statements: Statement[];
 		voteResults?: {
@@ -49,6 +52,38 @@ interface GameStatus {
 		votesReceived: number;
 		votesNeeded: number;
 	};
+}
+
+function PlayerAvatar({
+	avatarUrl,
+	nickname,
+	size = "small",
+}: {
+	avatarUrl: string | null;
+	nickname: string;
+	size?: "small" | "medium" | "large";
+}) {
+	const sizeClasses = {
+		small: "avatar-small",
+		medium: "avatar-medium",
+		large: "avatar-large",
+	};
+
+	if (avatarUrl) {
+		return (
+			<img
+				src={avatarUrl}
+				alt={`${nickname}'s avatar`}
+				className={`player-avatar ${sizeClasses[size]}`}
+			/>
+		);
+	}
+
+	return (
+		<div className={`player-avatar-placeholder ${sizeClasses[size]}`}>
+			{nickname.charAt(0).toUpperCase()}
+		</div>
+	);
 }
 
 export default function PlayPage() {
@@ -193,6 +228,11 @@ export default function PlayPage() {
 			<div className="play-header">
 				<h1>Partie : {code}</h1>
 				<span className="player-badge">
+					<PlayerAvatar
+						avatarUrl={currentPlayer.avatarUrl}
+						nickname={currentPlayer.nickname}
+						size="small"
+					/>
 					Vous jouez en tant que : {currentPlayer.nickname}
 				</span>
 			</div>
@@ -265,7 +305,14 @@ export default function PlayPage() {
 						<h3>Joueurs</h3>
 						{players.map((player) => (
 							<div key={player.id} className="player-row">
-								<span>{player.nickname}</span>
+								<span className="player-info">
+									<PlayerAvatar
+										avatarUrl={player.avatarUrl}
+										nickname={player.nickname}
+										size="small"
+									/>
+									{player.nickname}
+								</span>
 								<span>
 									{player.hasSubmittedStatements ? "✅ Prêt" : "⏳ Écrit..."}
 								</span>
@@ -315,6 +362,11 @@ export default function PlayPage() {
 										onClick={() => setSelectedVote(player.id)}
 										className={`vote-option ${selectedVote === player.id ? "selected" : ""}`}
 									>
+										<PlayerAvatar
+											avatarUrl={player.avatarUrl}
+											nickname={player.nickname}
+											size="medium"
+										/>
 										{player.nickname}
 									</button>
 								))}
@@ -335,9 +387,16 @@ export default function PlayPage() {
 			{game.status === "results-author" && currentRound && (
 				<div className="results-section">
 					<h2>Résultats - Auteur</h2>
-					<p>
+					<p className="author-reveal">
 						Les affirmations ont été écrites par :{" "}
-						<strong>{currentRound.playerNickname}</strong>
+						<span className="author-name">
+							<PlayerAvatar
+								avatarUrl={currentRound.playerAvatarUrl}
+								nickname={currentRound.playerNickname}
+								size="medium"
+							/>
+							<strong>{currentRound.playerNickname}</strong>
+						</span>
 					</p>
 
 					{currentRound.voteResults && (
@@ -363,8 +422,16 @@ export default function PlayPage() {
 			{game.status === "voting-truth" && currentRound && (
 				<div className="voting-section">
 					<h2>Quelle affirmation est VRAIE ?</h2>
-					<p>
-						Écrit par : <strong>{currentRound.playerNickname}</strong>
+					<p className="author-reveal">
+						Écrit par :{" "}
+						<span className="author-name">
+							<PlayerAvatar
+								avatarUrl={currentRound.playerAvatarUrl}
+								nickname={currentRound.playerNickname}
+								size="medium"
+							/>
+							<strong>{currentRound.playerNickname}</strong>
+						</span>
 					</p>
 
 					{currentPlayer.isCurrentRoundPlayer ? (
@@ -489,6 +556,11 @@ export default function PlayPage() {
 															: `#${index + 1}`}
 											</span>
 											<span className="player-name">
+												<PlayerAvatar
+													avatarUrl={player.avatarUrl}
+													nickname={player.nickname}
+													size="medium"
+												/>
 												{player.nickname}{" "}
 												{player.id === currentPlayer.id && "(Vous)"}
 											</span>
@@ -518,7 +590,14 @@ export default function PlayPage() {
 						.slice(0, 5)
 						.map((player) => (
 							<div key={player.id} className="mini-score-row">
-								<span>{player.nickname}</span>
+								<span className="player-info">
+									<PlayerAvatar
+										avatarUrl={player.avatarUrl}
+										nickname={player.nickname}
+										size="small"
+									/>
+									{player.nickname}
+								</span>
 								<span>{player.score}</span>
 							</div>
 						))}
