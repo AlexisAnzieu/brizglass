@@ -396,23 +396,23 @@ svg {
 
 .player-avatar.avatar-small,
 .player-avatar-placeholder.avatar-small {
-	width: 24px;
-	height: 24px;
-	font-size: 12px;
+	width: 36px;
+	height: 36px;
+	font-size: 16px;
 }
 
 .player-avatar.avatar-medium,
 .player-avatar-placeholder.avatar-medium {
-	width: 40px;
-	height: 40px;
-	font-size: 16px;
+	width: 56px;
+	height: 56px;
+	font-size: 22px;
 }
 
 .player-avatar.avatar-large,
 .player-avatar-placeholder.avatar-large {
-	width: 60px;
-	height: 60px;
-	font-size: 24px;
+	width: 80px;
+	height: 80px;
+	font-size: 32px;
 }
 
 .player-avatar-placeholder {
