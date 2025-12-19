@@ -207,12 +207,13 @@ export default function AdminPage() {
 					<div className="game-section">
 						<div className="round-info">
 							<h2>Manche {gameStatus.game.currentRound}</h2>
-							{gameStatus.currentRound && gameStatus.game.status !== "voting-author" && (
-								<p>
-									Joueur actuel :{" "}
-									<strong>{gameStatus.currentRound.playerNickname}</strong>
-								</p>
-							)}
+							{gameStatus.currentRound &&
+								gameStatus.game.status !== "voting-author" && (
+									<p>
+										Joueur actuel :{" "}
+										<strong>{gameStatus.currentRound.playerNickname}</strong>
+									</p>
+								)}
 						</div>
 
 						{gameStatus.currentRound?.statements && (
@@ -225,11 +226,12 @@ export default function AdminPage() {
 									>
 										<span className="statement-number">{index + 1}</span>
 										<span className="statement-text">{statement.text}</span>
-										{gameStatus.game.status === "results-truth" && statement.isTrue !== undefined && (
-											<span className="statement-truth">
-												{statement.isTrue ? "✅ VRAI" : "❌ FAUX"}
-											</span>
-										)}
+										{gameStatus.game.status === "results-truth" &&
+											statement.isTrue !== undefined && (
+												<span className="statement-truth">
+													{statement.isTrue ? "✅ VRAI" : "❌ FAUX"}
+												</span>
+											)}
 									</div>
 								))}
 							</div>
@@ -293,40 +295,55 @@ export default function AdminPage() {
 					</div>
 				)}
 
-			{gameStatus.game.status === "finished" && (
-				<div className="finished-section">
-					<h2>🎉 Partie terminée !</h2>
-					<div className="final-scoreboard">
-						{gameStatus.players
-							.sort((a, b) => b.score - a.score)
-							.map((player, index) => (
-								<div
-									key={player.id}
-									className={`final-score-row ${index === 0 ? "winner" : ""}`}
-								>
-									<span className="rank">
-										{index === 0
-											? "🏆"
-											: index === 1
-												? "🥈"
-												: index === 2
-													? "🥉"
-													: `#${index + 1}`}
-									</span>
-									<span className="player-name">{player.nickname}</span>
-									<span className="score">{player.score} pts</span>
-								</div>
-							))}
-					</div>
-					<button
-						type="button"
-						onClick={() => router.push("/")}
-						className="btn btn-secondary"
-					>
-						Retour à l&apos;accueil
-					</button>
-				</div>
-			)}
+			{gameStatus.game.status === "finished" &&
+				(() => {
+					const sortedPlayers = [...gameStatus.players].sort(
+						(a, b) => b.score - a.score,
+					);
+					const topScore = sortedPlayers[0]?.score ?? 0;
+					return (
+						<div className="finished-section">
+							<h2>🎉 Partie terminée !</h2>
+							<div className="final-scoreboard">
+								{sortedPlayers.map((player, index) => {
+									const isWinner = player.score === topScore;
+									return (
+										<div
+											key={player.id}
+											className={`final-score-row ${isWinner ? "winner" : ""}`}
+										>
+											<span className="rank">
+												{isWinner
+													? "🏆"
+													: index === 1 ||
+															(index > 0 &&
+																sortedPlayers[index - 1]?.score === topScore &&
+																player.score !== topScore)
+														? "🥈"
+														: index === 2 ||
+																(index > 1 &&
+																	sortedPlayers.filter(
+																		(p) => p.score > player.score,
+																	).length === 1)
+															? "🥉"
+															: `#${index + 1}`}
+											</span>
+											<span className="player-name">{player.nickname}</span>
+											<span className="score">{player.score} pts</span>
+										</div>
+									);
+								})}
+							</div>
+							<button
+								type="button"
+								onClick={() => router.push("/")}
+								className="btn btn-secondary"
+							>
+								Retour à l&apos;accueil
+							</button>
+						</div>
+					);
+				})()}
 		</div>
 	);
 }
