@@ -69,6 +69,10 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    games: Game;
+    players: Player;
+    statements: Statement;
+    votes: Vote;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,6 +82,10 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    games: GamesSelect<false> | GamesSelect<true>;
+    players: PlayersSelect<false> | PlayersSelect<true>;
+    statements: StatementsSelect<false> | StatementsSelect<true>;
+    votes: VotesSelect<false> | VotesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -161,6 +169,134 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "games".
+ */
+export interface Game {
+  id: string;
+  /**
+   * Unique game code for players to join (e.g., ABC123)
+   */
+  code: string;
+  /**
+   * Current game phase
+   */
+  status: 'lobby' | 'voting-author' | 'results-author' | 'voting-truth' | 'results-truth' | 'finished';
+  /**
+   * Current round number (0 = not started, 1+ = active round)
+   */
+  currentRound: number;
+  /**
+   * ID of the player whose statements are being guessed this round
+   */
+  currentPlayerId?: string | null;
+  /**
+   * Secret token for admin to control the game
+   */
+  adminToken: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "players".
+ */
+export interface Player {
+  id: string;
+  /**
+   * Player display name
+   */
+  nickname: string;
+  /**
+   * The game this player belongs to
+   */
+  game: string | Game;
+  /**
+   * Session token to identify the player (stored in cookie)
+   */
+  sessionToken: string;
+  /**
+   * Total points accumulated
+   */
+  score: number;
+  /**
+   * Whether player has submitted their 3 statements
+   */
+  hasSubmittedStatements?: boolean | null;
+  /**
+   * Whether this player's statements have been used in a round
+   */
+  hasBeenGuessed?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "statements".
+ */
+export interface Statement {
+  id: string;
+  /**
+   * The statement text
+   */
+  text: string;
+  /**
+   * Is this the true statement?
+   */
+  isTrue: boolean;
+  /**
+   * The player who wrote this statement
+   */
+  player: string | Player;
+  /**
+   * The game this statement belongs to
+   */
+  game: string | Game;
+  /**
+   * Display order (1, 2, or 3)
+   */
+  order: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "votes".
+ */
+export interface Vote {
+  id: string;
+  /**
+   * The game this vote belongs to
+   */
+  game: string | Game;
+  /**
+   * The round number when this vote was cast
+   */
+  round: number;
+  /**
+   * The player who cast this vote
+   */
+  voter: string | Player;
+  /**
+   * Type of vote
+   */
+  voteType: 'author' | 'truth';
+  /**
+   * The player voted as the author (for author votes)
+   */
+  votedPlayer?: (string | null) | Player;
+  /**
+   * The statement voted as true (for truth votes)
+   */
+  votedStatement?: (string | null) | Statement;
+  /**
+   * Whether this vote was correct
+   */
+  isCorrect?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -190,6 +326,22 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: string | Media;
+      } | null)
+    | ({
+        relationTo: 'games';
+        value: string | Game;
+      } | null)
+    | ({
+        relationTo: 'players';
+        value: string | Player;
+      } | null)
+    | ({
+        relationTo: 'statements';
+        value: string | Statement;
+      } | null)
+    | ({
+        relationTo: 'votes';
+        value: string | Vote;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -272,6 +424,61 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "games_select".
+ */
+export interface GamesSelect<T extends boolean = true> {
+  code?: T;
+  status?: T;
+  currentRound?: T;
+  currentPlayerId?: T;
+  adminToken?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "players_select".
+ */
+export interface PlayersSelect<T extends boolean = true> {
+  nickname?: T;
+  game?: T;
+  sessionToken?: T;
+  score?: T;
+  hasSubmittedStatements?: T;
+  hasBeenGuessed?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "statements_select".
+ */
+export interface StatementsSelect<T extends boolean = true> {
+  text?: T;
+  isTrue?: T;
+  player?: T;
+  game?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "votes_select".
+ */
+export interface VotesSelect<T extends boolean = true> {
+  game?: T;
+  round?: T;
+  voter?: T;
+  voteType?: T;
+  votedPlayer?: T;
+  votedStatement?: T;
+  isCorrect?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

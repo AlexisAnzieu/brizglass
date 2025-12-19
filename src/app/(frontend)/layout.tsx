@@ -1,19 +1,20 @@
-import React from 'react'
-import './styles.css'
+import type React from "react";
+import "./styles.css";
 
 export const metadata = {
-  description: 'A blank template using Payload in a Next.js app.',
-  title: 'Payload Blank Template',
-}
+	description:
+		"Apprenez à vous connaître grâce à des jeux de devinettes amusants !",
+	title: "Icebreaker - Jeu de Team Building",
+};
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
-  const { children } = props
+	const { children } = props;
 
-  return (
-    <html lang="en">
-      <body>
-        <main>{children}</main>
-      </body>
-    </html>
-  )
+	return (
+		<html lang="fr">
+			<body>
+				<main>{children}</main>
+			</body>
+		</html>
+	);
 }

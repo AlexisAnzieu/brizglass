@@ -1,59 +1,106 @@
-import { headers as getHeaders } from 'next/headers.js'
-import Image from 'next/image'
-import { getPayload } from 'payload'
-import React from 'react'
-import { fileURLToPath } from 'url'
+"use client";
 
-import config from '@/payload.config'
-import './styles.css'
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-export default async function HomePage() {
-  const headers = await getHeaders()
-  const payloadConfig = await config
-  const payload = await getPayload({ config: payloadConfig })
-  const { user } = await payload.auth({ headers })
+export default function HomePage() {
+	const router = useRouter();
+	const [joinCode, setJoinCode] = useState("");
+	const [isCreating, setIsCreating] = useState(false);
+	const [error, setError] = useState("");
 
-  const fileURL = `vscode://file/${fileURLToPath(import.meta.url)}`
+	const handleCreateGame = async () => {
+		setIsCreating(true);
+		setError("");
 
-  return (
-    <div className="home">
-      <div className="content">
-        <picture>
-          <source srcSet="https://raw.githubusercontent.com/payloadcms/payload/main/packages/ui/src/assets/payload-favicon.svg" />
-          <Image
-            alt="Payload Logo"
-            height={65}
-            src="https://raw.githubusercontent.com/payloadcms/payload/main/packages/ui/src/assets/payload-favicon.svg"
-            width={65}
-          />
-        </picture>
-        {!user && <h1>Welcome to your new project.</h1>}
-        {user && <h1>Welcome back, {user.email}</h1>}
-        <div className="links">
-          <a
-            className="admin"
-            href={payloadConfig.routes.admin}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Go to admin panel
-          </a>
-          <a
-            className="docs"
-            href="https://payloadcms.com/docs"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Documentation
-          </a>
-        </div>
-      </div>
-      <div className="footer">
-        <p>Update this page by editing</p>
-        <a className="codeLink" href={fileURL}>
-          <code>app/(frontend)/page.tsx</code>
-        </a>
-      </div>
-    </div>
-  )
+		try {
+			const response = await fetch("/api/game/create", { method: "POST" });
+			const data = await response.json();
+
+			if (data.success) {
+				// Store admin token in localStorage
+				localStorage.setItem(
+					`game_${data.game.code}_admin`,
+					data.game.adminToken,
+				);
+				router.push(`/game/${data.game.code}/admin`);
+			} else {
+				setError(data.error || "Échec de la création de la partie");
+			}
+		} catch {
+			setError("Échec de la création de la partie");
+		} finally {
+			setIsCreating(false);
+		}
+	};
+
+	const handleJoinGame = (e: React.FormEvent) => {
+		e.preventDefault();
+		if (joinCode.trim()) {
+			router.push(`/game/${joinCode.toUpperCase()}/join`);
+		}
+	};
+
+	return (
+		<div className="home-container">
+			<div className="hero">
+				<h1>🧊 Icebreaker</h1>
+				<p>
+					Apprenez à vous connaître grâce à des jeux de devinettes amusants !
+				</p>
+			</div>
+
+			<div className="actions">
+				<div className="action-card">
+					<h2>Créer une partie</h2>
+					<p>Lancez une nouvelle session et invitez d'autres joueurs</p>
+					<button
+						type="button"
+						onClick={handleCreateGame}
+						disabled={isCreating}
+						className="btn btn-primary"
+					>
+						{isCreating ? "Création..." : "Créer une partie"}
+					</button>
+				</div>
+
+				<div className="divider">ou</div>
+
+				<div className="action-card">
+					<h2>Rejoindre une partie</h2>
+					<p>Entrez le code de la partie pour rejoindre</p>
+					<form onSubmit={handleJoinGame} className="join-form">
+						<input
+							type="text"
+							value={joinCode}
+							onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+							placeholder="Code (ex: ABC123)"
+							maxLength={6}
+							className="input"
+						/>
+						<button
+							type="submit"
+							className="btn btn-secondary"
+							disabled={!joinCode.trim()}
+						>
+							Rejoindre
+						</button>
+					</form>
+				</div>
+			</div>
+
+			{error && <p className="error">{error}</p>}
+
+			<div className="how-it-works">
+				<h3>Comment ça marche</h3>
+				<ol>
+					<li>🎮 Créez une partie ou rejoignez avec un code</li>
+					<li>✍️ Écrivez 3 affirmations sur vous (2 mensonges, 1 vérité)</li>
+					<li>🤔 Devinez qui a écrit quelles affirmations</li>
+					<li>🎯 Identifiez quelle affirmation est vraie</li>
+					<li>🏆 Marquez des points et amusez-vous !</li>
+				</ol>
+			</div>
+		</div>
+	);
 }
