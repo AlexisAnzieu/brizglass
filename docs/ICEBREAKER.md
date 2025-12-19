@@ -1,4 +1,4 @@
-# 🧊 Icebreaker Game
+# 🧊 Brizglass Game
 
 A fun team-building game where players get to know each other through guessing games.
 

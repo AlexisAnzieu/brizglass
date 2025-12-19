@@ -44,7 +44,7 @@ export default function HomePage() {
 	return (
 		<div className="home-container">
 			<div className="hero">
-				<h1>🧊 Icebreaker</h1>
+				<h1>🧊 Brizglass</h1>
 				<p>
 					Apprenez à vous connaître grâce à des jeux de devinettes amusants !
 				</p>

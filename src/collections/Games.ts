@@ -3,7 +3,7 @@ import type { CollectionConfig } from "payload";
 /**
  * Games Collection
  *
- * Represents an icebreaker game session.
+ * Represents an brizglass game session.
  * Game Flow:
  * 1. Admin creates game -> status: 'lobby'
  * 2. Players join via code -> status: 'lobby'

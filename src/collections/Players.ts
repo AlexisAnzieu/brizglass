@@ -3,7 +3,7 @@ import type { CollectionConfig } from "payload";
 /**
  * Players Collection
  *
- * Represents a player in an icebreaker game.
+ * Represents a player in an brizglass game.
  * Players join via game code and submit their nickname.
  * Each player submits 3 statements (2 false, 1 true).
  * Players accumulate points by:
