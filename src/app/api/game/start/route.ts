@@ -66,14 +66,10 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		// Select first player who hasn't been guessed yet
-		const firstPlayer = players.docs.find((p) => !p.hasBeenGuessed);
-		if (!firstPlayer) {
-			return NextResponse.json(
-				{ error: "No players available for guessing" },
-				{ status: 400 },
-			);
-		}
+		// Create randomized player order for the game
+		const playerIds = players.docs.map((p) => p.id);
+		const shuffledPlayerIds = playerIds.sort(() => Math.random() - 0.5);
+		const firstPlayerId = shuffledPlayerIds[0];
 
 		// Update game to start
 		await payload.update({
@@ -82,7 +78,9 @@ export async function POST(request: NextRequest) {
 			data: {
 				status: "voting-author",
 				currentRound: 1,
-				currentPlayerId: firstPlayer.id,
+				truthRound: 0,
+				currentPlayerId: firstPlayerId,
+				playerOrder: shuffledPlayerIds,
 			},
 		});
 
@@ -90,7 +88,7 @@ export async function POST(request: NextRequest) {
 			success: true,
 			message: "Game started",
 			currentRound: 1,
-			currentPlayerId: firstPlayer.id,
+			currentPlayerId: firstPlayerId,
 		});
 	} catch (error) {
 		console.error("Error starting game:", error);

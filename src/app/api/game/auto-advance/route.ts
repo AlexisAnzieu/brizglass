@@ -7,10 +7,12 @@ type GameStatus = NonNullable<Game["status"]>;
 
 /**
  * POST /api/game/auto-advance
- * Auto-advance from results phase to next voting phase (called by frontend timer)
+ * Auto-advance from results phase to next phase (called by frontend timer)
  * Body: { gameId: string }
  *
- * This is only valid during results phases and doesn't require admin token
+ * Flow:
+ * - results-author -> voting-truth (start truth phase with truthRound 1)
+ * - results-truth -> voting-truth (next player) OR finished (if last player)
  */
 export async function POST(request: NextRequest) {
 	try {
@@ -44,33 +46,30 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
+		const playerOrder = (game.playerOrder as string[]) || [];
+		const totalPlayers = playerOrder.length;
+
 		let newStatus: GameStatus;
-		let newRound = game.currentRound;
+		let newTruthRound = game.truthRound;
 		let newCurrentPlayerId = game.currentPlayerId;
 
 		switch (game.status) {
 			case "results-author":
+				// Start truth voting phase with first player
 				newStatus = "voting-truth";
+				newTruthRound = 1;
+				newCurrentPlayerId = playerOrder[0];
 				break;
 
 			case "results-truth": {
-				// Mark current player as guessed
-				if (game.currentPlayerId) {
-					await payload.update({
-						collection: "players",
-						id: game.currentPlayerId,
-						data: { hasBeenGuessed: true },
-					});
-				}
-
-				// Find next player
-				const nextPlayer = await findNextPlayer(payload, gameId);
-
-				if (nextPlayer) {
-					newStatus = "voting-author";
-					newRound = game.currentRound + 1;
-					newCurrentPlayerId = nextPlayer.id;
+				// Move to next player's truth voting or finish
+				if (game.truthRound < totalPlayers) {
+					// More players to vote on
+					newTruthRound = game.truthRound + 1;
+					newCurrentPlayerId = playerOrder[newTruthRound - 1];
+					newStatus = "voting-truth";
 				} else {
+					// All truth rounds complete - game finished
 					newStatus = "finished";
 				}
 				break;
@@ -91,7 +90,7 @@ export async function POST(request: NextRequest) {
 			id: gameId,
 			data: {
 				status: newStatus,
-				currentRound: newRound,
+				truthRound: newTruthRound,
 				currentPlayerId: newCurrentPlayerId,
 			},
 		});
@@ -99,7 +98,7 @@ export async function POST(request: NextRequest) {
 		return NextResponse.json({
 			success: true,
 			newStatus,
-			currentRound: newRound,
+			truthRound: newTruthRound,
 			currentPlayerId: newCurrentPlayerId,
 			isFinishing,
 		});
@@ -110,26 +109,4 @@ export async function POST(request: NextRequest) {
 			{ status: 500 },
 		);
 	}
-}
-
-/**
- * Find the next player who hasn't been guessed yet
- */
-async function findNextPlayer(
-	payload: Awaited<ReturnType<typeof getPayload>>,
-	gameId: string,
-) {
-	const players = await payload.find({
-		collection: "players",
-		where: {
-			and: [
-				{ game: { equals: gameId } },
-				{ hasSubmittedStatements: { equals: true } },
-				{ hasBeenGuessed: { equals: false } },
-			],
-		},
-		limit: 1,
-	});
-
-	return players.docs[0] || null;
 }

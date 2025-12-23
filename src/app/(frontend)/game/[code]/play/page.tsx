@@ -30,12 +30,27 @@ interface CurrentPlayer {
 	avatarUrl: string | null;
 }
 
+interface AuthorRoundResult {
+	round: number;
+	playerId: string;
+	playerNickname: string;
+	playerAvatarUrl: string | null;
+	statements: Statement[];
+	votes: {
+		voter: string;
+		votedPlayer?: string;
+		isCorrect: boolean;
+	}[];
+}
+
 interface GameStatus {
 	game: {
 		id: string;
 		code: string;
 		status: string;
 		currentRound: number;
+		truthRound: number;
+		totalPlayers: number;
 	};
 	players: Player[];
 	currentPlayer: CurrentPlayer | null;
@@ -53,6 +68,7 @@ interface GameStatus {
 		votesReceived: number;
 		votesNeeded: number;
 	};
+	allAuthorResults?: AuthorRoundResult[];
 }
 
 function PlayerAvatar({
@@ -192,7 +208,11 @@ export default function PlayPage() {
 	// Handle countdown timer for results phases
 	useEffect(() => {
 		const isResultsPhase = gameStatus?.game.status === "results-author" || gameStatus?.game.status === "results-truth";
-		const phaseKey = `${gameStatus?.game.status}-${gameStatus?.game.currentRound}`;
+		// Use truthRound for truth phase, currentRound for author phase
+		const roundForKey = gameStatus?.game.status === "results-truth" 
+			? gameStatus?.game.truthRound 
+			: gameStatus?.game.currentRound;
+		const phaseKey = `${gameStatus?.game.status}-${roundForKey}`;
 		
 		if (isResultsPhase && hasAutoAdvancedRef.current !== phaseKey) {
 			// Start countdown when entering results phase
@@ -235,7 +255,7 @@ export default function PlayPage() {
 				countdownRef.current = null;
 			}
 		};
-	}, [gameStatus?.game.status, gameStatus?.game.currentRound, autoAdvance]);
+	}, [gameStatus?.game.status, gameStatus?.game.currentRound, gameStatus?.game.truthRound, autoAdvance]);
 
 	// Show final results immediately if page is loaded with finished status
 	useEffect(() => {
@@ -443,6 +463,9 @@ export default function PlayPage() {
 			{game.status === "voting-author" && currentRound && (
 				<div className="voting-section">
 					<h2>Qui a écrit ces affirmations ?</h2>
+					<p className="round-progress">
+						Joueur {game.currentRound} / {game.totalPlayers}
+					</p>
 
 					<div className="statements-display">
 						{currentRound.statements.map((statement, index) => (
@@ -500,39 +523,53 @@ export default function PlayPage() {
 				</div>
 			)}
 
-			{/* Results - Author */}
-			{game.status === "results-author" && currentRound && (
+			{/* Results - Author (ALL results at once) */}
+			{game.status === "results-author" && gameStatus.allAuthorResults && (
 				<div className="results-section">
-					<h2>Résultats - Auteur</h2>
-					<p className="author-reveal">
-						Les affirmations ont été écrites par :{" "}
-						<span className="author-name">
-							<PlayerAvatar
-								avatarUrl={currentRound.playerAvatarUrl}
-								nickname={currentRound.playerNickname}
-								size="medium"
-							/>
-							<strong>{currentRound.playerNickname}</strong>
-						</span>
-					</p>
+					<h2>Résultats - Auteurs</h2>
+					<p>Voici qui a écrit chaque série d'affirmations !</p>
 
-					{currentRound.voteResults && (
-						<div className="vote-results">
-							{currentRound.voteResults.map((result) => (
-								<div
-									key={`${result.voter}-${result.votedPlayer}`}
-									className={`vote-result ${result.isCorrect ? "correct" : "incorrect"}`}
-								>
-									<span>{result.voter}</span>
-									<span>a deviné {result.votedPlayer}</span>
-									<span>{result.isCorrect ? "✅ +1" : "❌"}</span>
+					<div className="all-author-results">
+						{gameStatus.allAuthorResults.map((result) => (
+							<div key={result.round} className="author-result-card">
+								<div className="author-reveal">
+									<PlayerAvatar
+										avatarUrl={result.playerAvatarUrl}
+										nickname={result.playerNickname}
+										size="medium"
+									/>
+									<strong>{result.playerNickname}</strong>
 								</div>
-							))}
-						</div>
-					)}
+								
+								<div className="statements-mini">
+									{result.statements.map((statement, index) => (
+										<div key={statement.id} className="statement-mini">
+											<span className="statement-number">{index + 1}</span>
+											<span className="statement-text">{statement.text}</span>
+										</div>
+									))}
+								</div>
+
+								{result.votes.length > 0 && (
+									<div className="vote-results">
+										{result.votes.map((vote) => (
+											<div
+												key={`${result.round}-${vote.voter}`}
+												className={`vote-result ${vote.isCorrect ? "correct" : "incorrect"}`}
+											>
+												<span>{vote.voter}</span>
+												<span>→ {vote.votedPlayer}</span>
+												<span>{vote.isCorrect ? "✅ +1" : "❌"}</span>
+											</div>
+										))}
+									</div>
+								)}
+							</div>
+						))}
+					</div>
 
 					<p className="countdown-timer">
-						⏱️ Prochaine étape dans {countdown ?? 0} secondes...
+						⏱️ Phase Vérité dans {countdown ?? 0} secondes...
 					</p>
 				</div>
 			)}
@@ -541,6 +578,9 @@ export default function PlayPage() {
 			{game.status === "voting-truth" && currentRound && (
 				<div className="voting-section">
 					<h2>Quelle affirmation est VRAIE ?</h2>
+					<p className="round-progress">
+						Joueur {game.truthRound} / {game.totalPlayers}
+					</p>
 					<p className="author-reveal">
 						Écrit par :{" "}
 						<span className="author-name">

@@ -200,13 +200,29 @@ export interface Game {
    */
   status: 'lobby' | 'voting-author' | 'results-author' | 'voting-truth' | 'results-truth' | 'finished';
   /**
-   * Current round number (0 = not started, 1+ = active round)
+   * Current author voting round (0 = not started, 1 to N = which player's statements are being voted on)
    */
   currentRound: number;
   /**
-   * ID of the player whose statements are being guessed this round
+   * Current truth voting round (0 = not started, 1 to N = which player's truth is being voted on)
+   */
+  truthRound: number;
+  /**
+   * ID of the player whose statements are currently being shown
    */
   currentPlayerId?: string | null;
+  /**
+   * Array of player IDs defining the order for rounds (set when game starts)
+   */
+  playerOrder?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   /**
    * Secret token for admin to control the game
    */
@@ -244,10 +260,6 @@ export interface Player {
    * Whether player has submitted their 3 statements
    */
   hasSubmittedStatements?: boolean | null;
-  /**
-   * Whether this player's statements have been used in a round
-   */
-  hasBeenGuessed?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -479,7 +491,9 @@ export interface GamesSelect<T extends boolean = true> {
   code?: T;
   status?: T;
   currentRound?: T;
+  truthRound?: T;
   currentPlayerId?: T;
+  playerOrder?: T;
   adminToken?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -495,7 +509,6 @@ export interface PlayersSelect<T extends boolean = true> {
   sessionToken?: T;
   score?: T;
   hasSubmittedStatements?: T;
-  hasBeenGuessed?: T;
   updatedAt?: T;
   createdAt?: T;
 }

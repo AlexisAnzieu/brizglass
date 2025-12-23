@@ -3,17 +3,27 @@ import type { CollectionConfig } from "payload";
 /**
  * Games Collection
  *
- * Represents an brizglass game session.
+ * Represents a brizglass game session.
+ * 
  * Game Flow:
  * 1. Admin creates game -> status: 'lobby'
  * 2. Players join via code -> status: 'lobby'
  * 3. Players submit statements -> status: 'lobby'
  * 4. Admin starts game -> status: 'voting-author'
- * 5. Players vote on statement author -> status: 'voting-author'
- * 6. Results shown -> status: 'results-author'
- * 7. Players vote on true statement -> status: 'voting-truth'
- * 8. Results shown -> status: 'results-truth'
- * 9. Next round or -> status: 'finished'
+ * 
+ * AUTHOR PHASE (no reveals between rounds):
+ * 5. Players vote on who wrote player 1's statements -> voting-author (round 1)
+ * 6. Players vote on who wrote player 2's statements -> voting-author (round 2)
+ * ... continue for all N players
+ * 7. Show ALL author results at once -> status: 'results-author'
+ * 
+ * TRUTH PHASE (reveal after each round):
+ * 8. Players vote on player 1's true statement -> voting-truth (truthRound 1)
+ * 9. Reveal player 1's truth -> results-truth
+ * 10. Players vote on player 2's true statement -> voting-truth (truthRound 2)
+ * 11. Reveal player 2's truth -> results-truth
+ * ... continue for all N players
+ * 12. After last results-truth -> status: 'finished'
  */
 export const Games: CollectionConfig = {
 	slug: "games",
@@ -62,7 +72,17 @@ export const Games: CollectionConfig = {
 			defaultValue: 0,
 			admin: {
 				description:
-					"Current round number (0 = not started, 1+ = active round)",
+					"Current author voting round (0 = not started, 1 to N = which player's statements are being voted on)",
+			},
+		},
+		{
+			name: "truthRound",
+			type: "number",
+			required: true,
+			defaultValue: 0,
+			admin: {
+				description:
+					"Current truth voting round (0 = not started, 1 to N = which player's truth is being voted on)",
 			},
 		},
 		{
@@ -70,7 +90,15 @@ export const Games: CollectionConfig = {
 			type: "text",
 			admin: {
 				description:
-					"ID of the player whose statements are being guessed this round",
+					"ID of the player whose statements are currently being shown",
+			},
+		},
+		{
+			name: "playerOrder",
+			type: "json",
+			admin: {
+				description:
+					"Array of player IDs defining the order for rounds (set when game starts)",
 			},
 		},
 		{

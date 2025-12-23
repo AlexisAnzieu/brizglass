@@ -13,19 +13,41 @@ interface Player {
 	avatarUrl: string | null;
 }
 
+interface Statement {
+	id: string;
+	text: string;
+	order: number;
+	isTrue?: boolean;
+}
+
+interface AuthorRoundResult {
+	round: number;
+	playerId: string;
+	playerNickname: string;
+	playerAvatarUrl: string | null;
+	statements: Statement[];
+	votes: {
+		voter: string;
+		votedPlayer?: string;
+		isCorrect: boolean;
+	}[];
+}
+
 interface GameStatus {
 	game: {
 		id: string;
 		code: string;
 		status: string;
 		currentRound: number;
+		truthRound: number;
+		totalPlayers: number;
 	};
 	players: Player[];
 	currentRound?: {
 		playerNickname: string;
 		playerAvatarUrl: string | null;
 		playerId: string;
-		statements: { id: string; text: string; order: number; isTrue?: boolean }[];
+		statements: Statement[];
 		voteResults?: {
 			voter: string;
 			votedPlayer?: string;
@@ -35,6 +57,7 @@ interface GameStatus {
 		votesReceived: number;
 		votesNeeded: number;
 	};
+	allAuthorResults?: AuthorRoundResult[];
 }
 
 function PlayerAvatar({
@@ -266,76 +289,195 @@ export default function AdminPage() {
 			{gameStatus.game.status !== "lobby" &&
 				gameStatus.game.status !== "finished" && (
 					<div className="game-section">
-						<div className="round-info">
-							<h2>Manche {gameStatus.game.currentRound}</h2>
-							{gameStatus.currentRound &&
-								gameStatus.game.status !== "voting-author" && (
-									<p className="current-player-info">
-										Joueur actuel :{" "}
-										<span className="author-name">
-											<PlayerAvatar
-												avatarUrl={gameStatus.currentRound.playerAvatarUrl}
-												nickname={gameStatus.currentRound.playerNickname}
-												size="medium"
-											/>
-											<strong>{gameStatus.currentRound.playerNickname}</strong>
-										</span>
-									</p>
-								)}
-						</div>
-
-						{gameStatus.currentRound?.statements && (
-							<div className="statements-display">
-								<h3>Affirmations :</h3>
-								{gameStatus.currentRound.statements.map((statement, index) => (
-									<div
-										key={statement.id}
-										className={`statement-card ${gameStatus.game.status === "results-truth" && statement.isTrue !== undefined ? (statement.isTrue ? "true" : "false") : ""}`}
-									>
-										<span className="statement-number">{index + 1}</span>
-										<span className="statement-text">{statement.text}</span>
-										{gameStatus.game.status === "results-truth" &&
-											statement.isTrue !== undefined && (
-												<span className="statement-truth">
-													{statement.isTrue ? "✅ VRAI" : "❌ FAUX"}
-												</span>
-											)}
-									</div>
-								))}
-							</div>
-						)}
-
-						{(gameStatus.game.status === "voting-author" ||
-							gameStatus.game.status === "voting-truth") && (
-							<div className="voting-progress">
-								<p>
-									Votes: {gameStatus.currentRound?.votesReceived} /{" "}
-									{gameStatus.currentRound?.votesNeeded}
-								</p>
-								<div className="progress-bar">
-									<div
-										className="progress-fill"
-										style={{
-											width: `${((gameStatus.currentRound?.votesReceived || 0) / (gameStatus.currentRound?.votesNeeded || 1)) * 100}%`,
-										}}
-									/>
+						{/* Voting Author Phase */}
+						{gameStatus.game.status === "voting-author" && (
+							<>
+								<div className="round-info">
+									<h2>Phase Auteur - Joueur {gameStatus.game.currentRound} / {gameStatus.game.totalPlayers}</h2>
+									<p className="phase-description">Les joueurs devinent qui a écrit ces affirmations</p>
 								</div>
-							</div>
+
+								{gameStatus.currentRound?.statements && (
+									<div className="statements-display">
+										<h3>Affirmations :</h3>
+										{gameStatus.currentRound.statements.map((statement, index) => (
+											<div key={statement.id} className="statement-card">
+												<span className="statement-number">{index + 1}</span>
+												<span className="statement-text">{statement.text}</span>
+											</div>
+										))}
+									</div>
+								)}
+
+								<div className="voting-progress">
+									<p>
+										Votes: {gameStatus.currentRound?.votesReceived} /{" "}
+										{gameStatus.currentRound?.votesNeeded}
+									</p>
+									<div className="progress-bar">
+										<div
+											className="progress-fill"
+											style={{
+												width: `${((gameStatus.currentRound?.votesReceived || 0) / (gameStatus.currentRound?.votesNeeded || 1)) * 100}%`,
+											}}
+										/>
+									</div>
+								</div>
+							</>
 						)}
 
-						{gameStatus.currentRound?.voteResults && (
-							<div className="vote-results">
-								<h3>Résultats des votes :</h3>
-								{gameStatus.currentRound.voteResults.map((result) => (
-									<div
-										key={`${result.voter}-${result.votedPlayer || result.votedStatement}`}
-										className={`vote-result ${result.isCorrect ? "correct" : "incorrect"}`}
-									>
-										<span>{result.voter}</span>
-										<span>{result.isCorrect ? "✅" : "❌"}</span>
+						{/* Results Author Phase - Show ALL results */}
+						{gameStatus.game.status === "results-author" && gameStatus.allAuthorResults && (
+							<>
+								<div className="round-info">
+									<h2>Résultats - Auteurs</h2>
+									<p className="phase-description">Voici qui a écrit chaque série d'affirmations</p>
+								</div>
+
+								<div className="all-author-results">
+									{gameStatus.allAuthorResults.map((result) => (
+										<div key={result.round} className="author-result-card">
+											<div className="author-reveal">
+												<PlayerAvatar
+													avatarUrl={result.playerAvatarUrl}
+													nickname={result.playerNickname}
+													size="medium"
+												/>
+												<strong>{result.playerNickname}</strong>
+											</div>
+											
+											<div className="statements-mini">
+												{result.statements.map((statement, index) => (
+													<div key={statement.id} className="statement-mini">
+														<span className="statement-number">{index + 1}</span>
+														<span className="statement-text">{statement.text}</span>
+													</div>
+												))}
+											</div>
+
+											{result.votes.length > 0 && (
+												<div className="vote-results">
+													{result.votes.map((vote) => (
+														<div
+															key={`${result.round}-${vote.voter}`}
+															className={`vote-result ${vote.isCorrect ? "correct" : "incorrect"}`}
+														>
+															<span>{vote.voter}</span>
+															<span>→ {vote.votedPlayer}</span>
+															<span>{vote.isCorrect ? "✅" : "❌"}</span>
+														</div>
+													))}
+												</div>
+											)}
+										</div>
+									))}
+								</div>
+							</>
+						)}
+
+						{/* Voting Truth Phase */}
+						{gameStatus.game.status === "voting-truth" && (
+							<>
+								<div className="round-info">
+									<h2>Phase Vérité - Joueur {gameStatus.game.truthRound} / {gameStatus.game.totalPlayers}</h2>
+									{gameStatus.currentRound && (
+										<p className="current-player-info">
+											Joueur actuel :{" "}
+											<span className="author-name">
+												<PlayerAvatar
+													avatarUrl={gameStatus.currentRound.playerAvatarUrl}
+													nickname={gameStatus.currentRound.playerNickname}
+													size="medium"
+												/>
+												<strong>{gameStatus.currentRound.playerNickname}</strong>
+											</span>
+										</p>
+									)}
+								</div>
+
+								{gameStatus.currentRound?.statements && (
+									<div className="statements-display">
+										<h3>Quelle affirmation est VRAIE ?</h3>
+										{gameStatus.currentRound.statements.map((statement, index) => (
+											<div key={statement.id} className="statement-card">
+												<span className="statement-number">{index + 1}</span>
+												<span className="statement-text">{statement.text}</span>
+											</div>
+										))}
 									</div>
-								))}
-							</div>
+								)}
+
+								<div className="voting-progress">
+									<p>
+										Votes: {gameStatus.currentRound?.votesReceived} /{" "}
+										{gameStatus.currentRound?.votesNeeded}
+									</p>
+									<div className="progress-bar">
+										<div
+											className="progress-fill"
+											style={{
+												width: `${((gameStatus.currentRound?.votesReceived || 0) / (gameStatus.currentRound?.votesNeeded || 1)) * 100}%`,
+											}}
+										/>
+									</div>
+								</div>
+							</>
+						)}
+
+						{/* Results Truth Phase */}
+						{gameStatus.game.status === "results-truth" && (
+							<>
+								<div className="round-info">
+									<h2>Résultat Vérité - Joueur {gameStatus.game.truthRound} / {gameStatus.game.totalPlayers}</h2>
+									{gameStatus.currentRound && (
+										<p className="current-player-info">
+											Joueur :{" "}
+											<span className="author-name">
+												<PlayerAvatar
+													avatarUrl={gameStatus.currentRound.playerAvatarUrl}
+													nickname={gameStatus.currentRound.playerNickname}
+													size="medium"
+												/>
+												<strong>{gameStatus.currentRound.playerNickname}</strong>
+											</span>
+										</p>
+									)}
+								</div>
+
+								{gameStatus.currentRound?.statements && (
+									<div className="statements-display">
+										{gameStatus.currentRound.statements.map((statement, index) => (
+											<div
+												key={statement.id}
+												className={`statement-card ${statement.isTrue !== undefined ? (statement.isTrue ? "true" : "false") : ""}`}
+											>
+												<span className="statement-number">{index + 1}</span>
+												<span className="statement-text">{statement.text}</span>
+												{statement.isTrue !== undefined && (
+													<span className="statement-truth">
+														{statement.isTrue ? "✅ VRAI" : "❌ FAUX"}
+													</span>
+												)}
+											</div>
+										))}
+									</div>
+								)}
+
+								{gameStatus.currentRound?.voteResults && (
+									<div className="vote-results">
+										<h3>Résultats des votes :</h3>
+										{gameStatus.currentRound.voteResults.map((result) => (
+											<div
+												key={`${result.voter}-${result.votedStatement}`}
+												className={`vote-result ${result.isCorrect ? "correct" : "incorrect"}`}
+											>
+												<span>{result.voter}</span>
+												<span>{result.isCorrect ? "✅ Correct !" : "❌ Faux"}</span>
+											</div>
+										))}
+									</div>
+								)}
+							</>
 						)}
 
 						<div className="scoreboard">

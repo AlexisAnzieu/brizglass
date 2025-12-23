@@ -76,15 +76,6 @@ export const Players: CollectionConfig = {
 				description: "Whether player has submitted their 3 statements",
 			},
 		},
-		{
-			name: "hasBeenGuessed",
-			type: "checkbox",
-			defaultValue: false,
-			admin: {
-				description:
-					"Whether this player's statements have been used in a round",
-			},
-		},
 	],
 	timestamps: true,
 };

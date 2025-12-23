@@ -90,12 +90,14 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Check if already voted this round
+		// For author votes, use currentRound; for truth votes, use truthRound
+		const roundToCheck = voteType === "author" ? game.currentRound : game.truthRound;
 		const existingVotes = await payload.find({
 			collection: "votes",
 			where: {
 				and: [
 					{ game: { equals: gameId } },
-					{ round: { equals: game.currentRound } },
+					{ round: { equals: roundToCheck } },
 					{ voter: { equals: voter.id } },
 					{ voteType: { equals: voteType } },
 				],
@@ -127,7 +129,7 @@ export async function POST(request: NextRequest) {
 			collection: "votes",
 			data: {
 				game: gameId,
-				round: game.currentRound,
+				round: roundToCheck,
 				voter: voter.id,
 				voteType,
 				votedPlayer: voteType === "author" ? votedPlayerId : undefined,
@@ -136,7 +138,7 @@ export async function POST(request: NextRequest) {
 			},
 		});
 
-		// Check if all votes are in and auto-advance to results
+		// Check if all votes are in and auto-advance
 		const allPlayers = await payload.find({
 			collection: "players",
 			where: { game: { equals: gameId } },
@@ -150,7 +152,7 @@ export async function POST(request: NextRequest) {
 			where: {
 				and: [
 					{ game: { equals: gameId } },
-					{ round: { equals: game.currentRound } },
+					{ round: { equals: roundToCheck } },
 					{ voteType: { equals: voteType } },
 				],
 			},
@@ -158,24 +160,33 @@ export async function POST(request: NextRequest) {
 
 		let autoAdvanced = false;
 		let newStatus: GameStatus | undefined;
+		let newRound = game.currentRound;
+		let newTruthRound = game.truthRound;
+		let newCurrentPlayerId = game.currentPlayerId;
+
+		const playerOrder = (game.playerOrder as string[]) || [];
+		const totalPlayers = playerOrder.length;
 
 		if (currentVotes.totalDocs >= eligibleVoters) {
-			// All votes are in, auto-advance to results
+			// All votes are in for this round
 			if (voteType === "author") {
-				// Calculate points for correct author guesses
-				await calculateAuthorPoints(
-					payload,
-					gameId,
-					game.currentRound,
-					game.currentPlayerId as string,
-				);
-				newStatus = "results-author";
+				// Author voting: move to next player or go to results-author
+				if (game.currentRound < totalPlayers) {
+					// More players to vote on - advance to next player's statements
+					newRound = game.currentRound + 1;
+					newCurrentPlayerId = playerOrder[newRound - 1];
+					newStatus = "voting-author";
+				} else {
+					// All author rounds complete - calculate all points and show results
+					await calculateAllAuthorPoints(payload, gameId, playerOrder);
+					newStatus = "results-author";
+				}
 			} else {
-				// Calculate points for correct truth guesses + fooling points
+				// Truth voting: calculate points for this round and show results
 				await calculateTruthPoints(
 					payload,
 					gameId,
-					game.currentRound,
+					game.truthRound,
 					game.currentPlayerId as string,
 				);
 				newStatus = "results-truth";
@@ -184,7 +195,12 @@ export async function POST(request: NextRequest) {
 			await payload.update({
 				collection: "games",
 				id: gameId,
-				data: { status: newStatus },
+				data: {
+					status: newStatus,
+					currentRound: newRound,
+					truthRound: newTruthRound,
+					currentPlayerId: newCurrentPlayerId,
+				},
 			});
 			autoAdvanced = true;
 		}
@@ -205,39 +221,41 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Award points for correct author guesses
+ * Award points for ALL author guesses at once (after all author rounds complete)
  */
-async function calculateAuthorPoints(
+async function calculateAllAuthorPoints(
 	payload: Awaited<ReturnType<typeof getPayload>>,
 	gameId: string,
-	round: number,
-	_correctPlayerId: string,
+	playerOrder: string[],
 ) {
-	const votes = await payload.find({
-		collection: "votes",
-		where: {
-			and: [
-				{ game: { equals: gameId } },
-				{ round: { equals: round } },
-				{ voteType: { equals: "author" } },
-				{ isCorrect: { equals: true } },
-			],
-		},
-	});
-
-	// Award 1 point to each correct voter
-	for (const vote of votes.docs) {
-		const voterId = typeof vote.voter === "object" ? vote.voter.id : vote.voter;
-		const voter = await payload.findByID({
-			collection: "players",
-			id: voterId,
+	// Go through each round and award points for correct guesses
+	for (let round = 1; round <= playerOrder.length; round++) {
+		const votes = await payload.find({
+			collection: "votes",
+			where: {
+				and: [
+					{ game: { equals: gameId } },
+					{ round: { equals: round } },
+					{ voteType: { equals: "author" } },
+					{ isCorrect: { equals: true } },
+				],
+			},
 		});
 
-		await payload.update({
-			collection: "players",
-			id: voterId,
-			data: { score: (voter.score || 0) + 1 },
-		});
+		// Award 1 point to each correct voter
+		for (const vote of votes.docs) {
+			const voterId = typeof vote.voter === "object" ? vote.voter.id : vote.voter;
+			const voter = await payload.findByID({
+				collection: "players",
+				id: voterId,
+			});
+
+			await payload.update({
+				collection: "players",
+				id: voterId,
+				data: { score: (voter.score || 0) + 1 },
+			});
+		}
 	}
 }
 
