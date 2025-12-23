@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { usePartySocket } from "@/hooks/usePartySocket";
 
 interface Statement {
@@ -108,6 +108,11 @@ export default function PlayPage() {
 	const [selectedVote, setSelectedVote] = useState<string | null>(null);
 	const [voting, setVoting] = useState(false);
 
+	// Auto-advance timer state
+	const [countdown, setCountdown] = useState<number | null>(null);
+	const countdownRef = useRef<NodeJS.Timeout | null>(null);
+	const hasAutoAdvancedRef = useRef<string | null>(null);
+
 	const fetchStatus = useCallback(async () => {
 		try {
 			const response = await fetch(`/api/game/${code}/status`);
@@ -134,7 +139,7 @@ export default function PlayPage() {
 	}, [code, router]);
 
 	// Use PartyKit for real-time updates
-	const { notifyPlayerReady, notifyVoteSubmitted } = usePartySocket({
+	const { notifyPlayerReady, notifyVoteSubmitted, notifyPhaseChanged } = usePartySocket({
 		gameCode: code,
 		onGameUpdate: fetchStatus,
 		onPlayerJoined: fetchStatus,
@@ -143,6 +148,74 @@ export default function PlayPage() {
 		onVoteSubmitted: fetchStatus,
 		onPhaseChanged: fetchStatus,
 	});
+
+	// Auto-advance function for results phases
+	const autoAdvance = useCallback(async () => {
+		if (!gameStatus?.game.id) return;
+		
+		try {
+			const response = await fetch("/api/game/auto-advance", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ gameId: gameStatus.game.id }),
+			});
+			const data = await response.json();
+			if (data.success) {
+				notifyPhaseChanged(data.newStatus);
+				fetchStatus();
+			}
+		} catch (error) {
+			console.error("Auto-advance failed:", error);
+		}
+	}, [gameStatus?.game.id, notifyPhaseChanged, fetchStatus]);
+
+	// Handle countdown timer for results phases
+	useEffect(() => {
+		const isResultsPhase = gameStatus?.game.status === "results-author" || gameStatus?.game.status === "results-truth";
+		const phaseKey = `${gameStatus?.game.status}-${gameStatus?.game.currentRound}`;
+		
+		if (isResultsPhase && hasAutoAdvancedRef.current !== phaseKey) {
+			// Start countdown when entering results phase
+			setCountdown(20);
+			
+			// Clear any existing interval
+			if (countdownRef.current) {
+				clearInterval(countdownRef.current);
+			}
+			
+			countdownRef.current = setInterval(() => {
+				setCountdown((prev) => {
+					if (prev === null || prev <= 1) {
+						// Clear interval and auto-advance
+						if (countdownRef.current) {
+							clearInterval(countdownRef.current);
+							countdownRef.current = null;
+						}
+						// Mark this phase as auto-advanced
+						hasAutoAdvancedRef.current = phaseKey;
+						// Trigger auto-advance
+						autoAdvance();
+						return null;
+					}
+					return prev - 1;
+				});
+			}, 1000);
+		} else if (!isResultsPhase) {
+			// Clear countdown when leaving results phase
+			setCountdown(null);
+			if (countdownRef.current) {
+				clearInterval(countdownRef.current);
+				countdownRef.current = null;
+			}
+		}
+		
+		return () => {
+			if (countdownRef.current) {
+				clearInterval(countdownRef.current);
+				countdownRef.current = null;
+			}
+		};
+	}, [gameStatus?.game.status, gameStatus?.game.currentRound, autoAdvance]);
 
 	useEffect(() => {
 		fetchStatus();
@@ -431,7 +504,9 @@ export default function PlayPage() {
 						</div>
 					)}
 
-					<p className="hint">En attente de l&apos;admin pour continuer...</p>
+					<p className="countdown-timer">
+						⏱️ Prochaine étape dans {countdown ?? 0} secondes...
+					</p>
 				</div>
 			)}
 
@@ -535,7 +610,9 @@ export default function PlayPage() {
 						</div>
 					)}
 
-					<p className="hint">En attente de l&apos;admin pour continuer...</p>
+					<p className="countdown-timer">
+						⏱️ Prochaine étape dans {countdown ?? 0} secondes...
+					</p>
 				</div>
 			)}
 

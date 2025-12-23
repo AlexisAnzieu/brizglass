@@ -98,7 +98,7 @@ export default function AdminPage() {
 	}, [code]);
 
 	// Use PartyKit for real-time updates
-	const { notifyGameStarted, notifyPhaseChanged } = usePartySocket({
+	const { notifyGameStarted } = usePartySocket({
 		gameCode: code,
 		onGameUpdate: fetchStatus,
 		onPlayerJoined: fetchStatus,
@@ -139,32 +139,6 @@ export default function AdminPage() {
 			}
 		} catch {
 			setError("Échec du démarrage");
-		} finally {
-			setActionLoading(false);
-		}
-	};
-
-	const handleNextPhase = async () => {
-		if (!adminToken || !gameStatus) return;
-		setActionLoading(true);
-
-		try {
-			const response = await fetch("/api/game/next-phase", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ gameId: gameStatus.game.id, adminToken }),
-			});
-			const data = await response.json();
-
-			if (!data.success) {
-				setError(data.error);
-			} else {
-				// Notify all clients about the phase change
-				notifyPhaseChanged(data.newStatus);
-				fetchStatus();
-			}
-		} catch {
-			setError("Échec de la progression");
 		} finally {
 			setActionLoading(false);
 		}
@@ -331,16 +305,6 @@ export default function AdminPage() {
 								))}
 							</div>
 						)}
-
-						<div className="admin-controls">
-							<button
-								type="button"
-								className="btn btn-primary"
-								onClick={handleNextPhase}
-							>
-								{actionLoading ? "Chargement..." : "Phase suivante →"}
-							</button>
-						</div>
 
 						<div className="scoreboard">
 							<h3>Classement</h3>

@@ -1,6 +1,9 @@
 import config from "@payload-config";
 import { type NextRequest, NextResponse } from "next/server";
 import { getPayload } from "payload";
+import type { Game } from "@/payload-types";
+
+type GameStatus = NonNullable<Game["status"]>;
 
 /**
  * POST /api/game/vote
@@ -133,9 +136,64 @@ export async function POST(request: NextRequest) {
 			},
 		});
 
+		// Check if all votes are in and auto-advance to results
+		const allPlayers = await payload.find({
+			collection: "players",
+			where: { game: { equals: gameId } },
+		});
+		const eligibleVoters = allPlayers.docs.filter(
+			(p) => p.id !== game.currentPlayerId,
+		).length;
+
+		const currentVotes = await payload.count({
+			collection: "votes",
+			where: {
+				and: [
+					{ game: { equals: gameId } },
+					{ round: { equals: game.currentRound } },
+					{ voteType: { equals: voteType } },
+				],
+			},
+		});
+
+		let autoAdvanced = false;
+		let newStatus: GameStatus | undefined;
+
+		if (currentVotes.totalDocs >= eligibleVoters) {
+			// All votes are in, auto-advance to results
+			if (voteType === "author") {
+				// Calculate points for correct author guesses
+				await calculateAuthorPoints(
+					payload,
+					gameId,
+					game.currentRound,
+					game.currentPlayerId as string,
+				);
+				newStatus = "results-author";
+			} else {
+				// Calculate points for correct truth guesses + fooling points
+				await calculateTruthPoints(
+					payload,
+					gameId,
+					game.currentRound,
+					game.currentPlayerId as string,
+				);
+				newStatus = "results-truth";
+			}
+
+			await payload.update({
+				collection: "games",
+				id: gameId,
+				data: { status: newStatus },
+			});
+			autoAdvanced = true;
+		}
+
 		return NextResponse.json({
 			success: true,
 			message: "Vote submitted",
+			autoAdvanced,
+			newStatus,
 		});
 	} catch (error) {
 		console.error("Error submitting vote:", error);
@@ -143,5 +201,100 @@ export async function POST(request: NextRequest) {
 			{ error: "Failed to submit vote" },
 			{ status: 500 },
 		);
+	}
+}
+
+/**
+ * Award points for correct author guesses
+ */
+async function calculateAuthorPoints(
+	payload: Awaited<ReturnType<typeof getPayload>>,
+	gameId: string,
+	round: number,
+	_correctPlayerId: string,
+) {
+	const votes = await payload.find({
+		collection: "votes",
+		where: {
+			and: [
+				{ game: { equals: gameId } },
+				{ round: { equals: round } },
+				{ voteType: { equals: "author" } },
+				{ isCorrect: { equals: true } },
+			],
+		},
+	});
+
+	// Award 1 point to each correct voter
+	for (const vote of votes.docs) {
+		const voterId = typeof vote.voter === "object" ? vote.voter.id : vote.voter;
+		const voter = await payload.findByID({
+			collection: "players",
+			id: voterId,
+		});
+
+		await payload.update({
+			collection: "players",
+			id: voterId,
+			data: { score: (voter.score || 0) + 1 },
+		});
+	}
+}
+
+/**
+ * Award points for correct truth guesses and fooling others
+ */
+async function calculateTruthPoints(
+	payload: Awaited<ReturnType<typeof getPayload>>,
+	gameId: string,
+	round: number,
+	currentPlayerId: string,
+) {
+	// Get all truth votes this round
+	const votes = await payload.find({
+		collection: "votes",
+		where: {
+			and: [
+				{ game: { equals: gameId } },
+				{ round: { equals: round } },
+				{ voteType: { equals: "truth" } },
+			],
+		},
+	});
+
+	const currentPlayer = await payload.findByID({
+		collection: "players",
+		id: currentPlayerId,
+	});
+
+	let foolingPoints = 0;
+
+	for (const vote of votes.docs) {
+		const voterId = typeof vote.voter === "object" ? vote.voter.id : vote.voter;
+		const voter = await payload.findByID({
+			collection: "players",
+			id: voterId,
+		});
+
+		if (vote.isCorrect) {
+			// Award 1 point for correct guess
+			await payload.update({
+				collection: "players",
+				id: voterId,
+				data: { score: (voter.score || 0) + 1 },
+			});
+		} else {
+			// Statement author gets a point for fooling someone
+			foolingPoints++;
+		}
+	}
+
+	// Award fooling points to statement author
+	if (foolingPoints > 0) {
+		await payload.update({
+			collection: "players",
+			id: currentPlayerId,
+			data: { score: (currentPlayer.score || 0) + foolingPoints },
+		});
 	}
 }
