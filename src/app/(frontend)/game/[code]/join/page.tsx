@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { usePartySocket } from "@/hooks/usePartySocket";
 
 export default function JoinPage() {
 	const router = useRouter();
@@ -15,6 +16,11 @@ export default function JoinPage() {
 	const [checkingSession, setCheckingSession] = useState(true);
 	const [error, setError] = useState("");
 	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	// Use PartyKit to notify when player joins
+	const { notifyPlayerJoined } = usePartySocket({
+		gameCode: code,
+	});
 
 	const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -90,6 +96,8 @@ export default function JoinPage() {
 			const data = await response.json();
 
 			if (data.success) {
+				// Notify other clients that a player has joined
+				notifyPlayerJoined(nickname.trim());
 				router.push(`/game/${code}/play`);
 			} else {
 				setError(data.error || "Échec de la connexion");

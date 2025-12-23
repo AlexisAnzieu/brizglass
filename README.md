@@ -19,10 +19,21 @@ After you click the `Deploy` button above, you'll want to have standalone copy o
 1. First [clone the repo](#clone) if you have not done so already
 2. `cd my-project && cp .env.example .env` to copy the example environment variables. You'll need to add the `MONGODB_URL` from your Cloud project to your `.env` if you want to use S3 storage and the MongoDB database that was created for you.
 
-3. `pnpm install && pnpm dev` to install dependencies and start the dev server
+3. `pnpm install && pnpm dev:all` to install dependencies and start both the Next.js dev server and PartyKit server
 4. open `http://localhost:3000` to open the app in your browser
 
+Alternatively, you can run the servers separately:
+- `pnpm dev` - runs the Next.js dev server only
+- `pnpm party:dev` - runs the PartyKit server for real-time updates
+
 That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
+
+### PartyKit Deployment
+
+To deploy PartyKit for production real-time features:
+
+1. Run `pnpm party:deploy` to deploy your PartyKit server
+2. Update `NEXT_PUBLIC_PARTYKIT_HOST` in your production environment with your PartyKit URL (e.g., `brizglass.username.partykit.dev`)
 
 #### Docker (Optional)
 

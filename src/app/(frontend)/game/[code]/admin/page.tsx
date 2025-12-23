@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useState } from "react";
+import { usePartySocket } from "@/hooks/usePartySocket";
 
 interface Player {
 	id: string;
@@ -96,6 +97,17 @@ export default function AdminPage() {
 		}
 	}, [code]);
 
+	// Use PartyKit for real-time updates
+	const { notifyGameStarted, notifyPhaseChanged } = usePartySocket({
+		gameCode: code,
+		onGameUpdate: fetchStatus,
+		onPlayerJoined: fetchStatus,
+		onPlayerReady: fetchStatus,
+		onGameStarted: fetchStatus,
+		onVoteSubmitted: fetchStatus,
+		onPhaseChanged: fetchStatus,
+	});
+
 	useEffect(() => {
 		const token = localStorage.getItem(`game_${code}_admin`);
 		if (!token) {
@@ -104,10 +116,6 @@ export default function AdminPage() {
 		}
 		setAdminToken(token);
 		fetchStatus();
-
-		// Poll for updates
-		const interval = setInterval(fetchStatus, 5000);
-		return () => clearInterval(interval);
 	}, [code, router, fetchStatus]);
 
 	const handleStartGame = async () => {
@@ -124,6 +132,10 @@ export default function AdminPage() {
 
 			if (!data.success) {
 				setError(data.error);
+			} else {
+				// Notify all clients that the game has started
+				notifyGameStarted();
+				fetchStatus();
 			}
 		} catch {
 			setError("Échec du démarrage");
@@ -146,6 +158,10 @@ export default function AdminPage() {
 
 			if (!data.success) {
 				setError(data.error);
+			} else {
+				// Notify all clients about the phase change
+				notifyPhaseChanged(data.newStatus);
+				fetchStatus();
 			}
 		} catch {
 			setError("Échec de la progression");

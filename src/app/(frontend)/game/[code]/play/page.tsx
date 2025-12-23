@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { usePartySocket } from "@/hooks/usePartySocket";
 
 interface Statement {
 	id: string;
@@ -132,10 +133,19 @@ export default function PlayPage() {
 		}
 	}, [code, router]);
 
+	// Use PartyKit for real-time updates
+	const { notifyPlayerReady, notifyVoteSubmitted } = usePartySocket({
+		gameCode: code,
+		onGameUpdate: fetchStatus,
+		onPlayerJoined: fetchStatus,
+		onPlayerReady: fetchStatus,
+		onGameStarted: fetchStatus,
+		onVoteSubmitted: fetchStatus,
+		onPhaseChanged: fetchStatus,
+	});
+
 	useEffect(() => {
 		fetchStatus();
-		const interval = setInterval(fetchStatus, 5000);
-		return () => clearInterval(interval);
 	}, [fetchStatus]);
 
 	const handleStatementChange = (index: number, text: string) => {
@@ -168,6 +178,10 @@ export default function PlayPage() {
 
 			if (!data.success) {
 				setError(data.error || "Échec de l'envoi des affirmations");
+			} else {
+				// Notify other clients that player is ready
+				notifyPlayerReady(gameStatus?.currentPlayer?.id || "");
+				fetchStatus();
 			}
 		} catch {
 			setError("Échec de l'envoi des affirmations");
@@ -205,6 +219,9 @@ export default function PlayPage() {
 				setError(data.error || "Échec de l'envoi du vote");
 			} else {
 				setSelectedVote(null);
+				// Notify other clients that a vote was submitted
+				notifyVoteSubmitted();
+				fetchStatus();
 			}
 		} catch {
 			setError("Échec de l'envoi du vote");
