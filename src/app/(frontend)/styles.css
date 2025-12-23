@@ -760,6 +760,73 @@ svg {
 	}
 }
 
+/* Final Countdown Overlay */
+.final-countdown-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(10, 10, 15, 0.95);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.final-countdown-content {
+	text-align: center;
+}
+
+.final-countdown-content h2 {
+	font-size: 32px;
+	margin-bottom: 30px;
+	background: var(--gradient-gold);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+}
+
+.final-countdown-number {
+	font-size: 180px;
+	font-weight: 800;
+	line-height: 1;
+	background: var(--gradient-primary);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	animation: countdownPulse 1s ease-in-out infinite;
+}
+
+@keyframes countdownPulse {
+	0%, 100% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.1);
+	}
+}
+
+@media (max-width: 768px) {
+	.final-countdown-content h2 {
+		font-size: 24px;
+	}
+	
+	.final-countdown-number {
+		font-size: 120px;
+	}
+}
+
 /* Game Section */
 .game-section {
 	display: flex;

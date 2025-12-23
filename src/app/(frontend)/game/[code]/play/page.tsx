@@ -112,6 +112,10 @@ export default function PlayPage() {
 	const [countdown, setCountdown] = useState<number | null>(null);
 	const countdownRef = useRef<NodeJS.Timeout | null>(null);
 	const hasAutoAdvancedRef = useRef<string | null>(null);
+	
+	// Final countdown state (5 seconds before showing results)
+	const [finalCountdown, setFinalCountdown] = useState<number | null>(null);
+	const [showFinalResults, setShowFinalResults] = useState(false);
 
 	const fetchStatus = useCallback(async () => {
 		try {
@@ -161,8 +165,24 @@ export default function PlayPage() {
 			});
 			const data = await response.json();
 			if (data.success) {
-				notifyPhaseChanged(data.newStatus);
-				fetchStatus();
+				// If finishing, start 5-second final countdown
+				if (data.isFinishing) {
+					setFinalCountdown(5);
+					const finalInterval = setInterval(() => {
+						setFinalCountdown((prev) => {
+							if (prev === null || prev <= 1) {
+								clearInterval(finalInterval);
+								setShowFinalResults(true);
+								fetchStatus();
+								return null;
+							}
+							return prev - 1;
+						});
+					}, 1000);
+				} else {
+					notifyPhaseChanged(data.newStatus);
+					fetchStatus();
+				}
 			}
 		} catch (error) {
 			console.error("Auto-advance failed:", error);
@@ -216,6 +236,13 @@ export default function PlayPage() {
 			}
 		};
 	}, [gameStatus?.game.status, gameStatus?.game.currentRound, autoAdvance]);
+
+	// Show final results immediately if page is loaded with finished status
+	useEffect(() => {
+		if (gameStatus?.game.status === "finished" && !showFinalResults && finalCountdown === null) {
+			setShowFinalResults(true);
+		}
+	}, [gameStatus?.game.status, showFinalResults, finalCountdown]);
 
 	useEffect(() => {
 		fetchStatus();
@@ -616,8 +643,18 @@ export default function PlayPage() {
 				</div>
 			)}
 
+			{/* Final Countdown Overlay */}
+			{finalCountdown !== null && (
+				<div className="final-countdown-overlay">
+					<div className="final-countdown-content">
+						<h2>🏆 Résultats finaux dans...</h2>
+						<div className="final-countdown-number">{finalCountdown}</div>
+					</div>
+				</div>
+			)}
+
 			{/* Game Finished */}
-			{game.status === "finished" &&
+			{game.status === "finished" && showFinalResults &&
 				(() => {
 					const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 					const topScore = sortedPlayers[0]?.score ?? 0;

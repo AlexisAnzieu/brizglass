@@ -83,6 +83,8 @@ export async function POST(request: NextRequest) {
 				);
 		}
 
+		const isFinishing = newStatus === "finished";
+
 		// Update game
 		await payload.update({
 			collection: "games",
@@ -99,6 +101,7 @@ export async function POST(request: NextRequest) {
 			newStatus,
 			currentRound: newRound,
 			currentPlayerId: newCurrentPlayerId,
+			isFinishing,
 		});
 	} catch (error) {
 		console.error("Error auto-advancing game phase:", error);

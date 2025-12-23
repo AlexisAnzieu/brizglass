@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { usePartySocket } from "@/hooks/usePartySocket";
 
 interface Player {
@@ -79,6 +79,11 @@ export default function AdminPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const [actionLoading, setActionLoading] = useState(false);
+	
+	// Final countdown state
+	const [finalCountdown, setFinalCountdown] = useState<number | null>(null);
+	const [showFinalResults, setShowFinalResults] = useState(false);
+	const previousStatusRef = useRef<string | null>(null);
 
 	const fetchStatus = useCallback(async () => {
 		try {
@@ -117,6 +122,33 @@ export default function AdminPage() {
 		setAdminToken(token);
 		fetchStatus();
 	}, [code, router, fetchStatus]);
+
+	// Handle final countdown when game transitions to finished
+	useEffect(() => {
+		const currentStatus = gameStatus?.game.status;
+		
+		// If transitioning to finished and we haven't shown countdown yet
+		if (currentStatus === "finished" && previousStatusRef.current && previousStatusRef.current !== "finished" && !showFinalResults) {
+			setFinalCountdown(5);
+			const interval = setInterval(() => {
+				setFinalCountdown((prev) => {
+					if (prev === null || prev <= 1) {
+						clearInterval(interval);
+						setShowFinalResults(true);
+						return null;
+					}
+					return prev - 1;
+				});
+			}, 1000);
+		}
+		
+		// If page loaded with finished status, show results immediately
+		if (currentStatus === "finished" && previousStatusRef.current === null && !showFinalResults) {
+			setShowFinalResults(true);
+		}
+		
+		previousStatusRef.current = currentStatus || null;
+	}, [gameStatus?.game.status, showFinalResults]);
 
 	const handleStartGame = async () => {
 		if (!adminToken || !gameStatus) return;
@@ -328,7 +360,17 @@ export default function AdminPage() {
 					</div>
 				)}
 
-			{gameStatus.game.status === "finished" &&
+			{/* Final Countdown Overlay */}
+			{finalCountdown !== null && (
+				<div className="final-countdown-overlay">
+					<div className="final-countdown-content">
+						<h2>🏆 Résultats finaux dans...</h2>
+						<div className="final-countdown-number">{finalCountdown}</div>
+					</div>
+				</div>
+			)}
+
+			{gameStatus.game.status === "finished" && showFinalResults &&
 				(() => {
 					const sortedPlayers = [...gameStatus.players].sort(
 						(a, b) => b.score - a.score,
