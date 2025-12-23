@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
 import PartySocket from "partysocket";
+import { useCallback, useEffect, useRef } from "react";
 import type { GameMessage } from "../../party/index";
 
-const PARTYKIT_HOST =
-	process.env.NEXT_PUBLIC_PARTYKIT_HOST || "localhost:1999";
+const PARTYKIT_HOST = process.env.NEXT_PUBLIC_PARTYKIT_HOST || "localhost:1999";
 
 interface UsePartySocketOptions {
 	gameCode: string;

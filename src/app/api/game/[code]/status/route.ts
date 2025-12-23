@@ -15,7 +15,7 @@ function getAvatarUrl(player: Player): string | null {
 /**
  * GET /api/game/[code]/status
  * Get current game status, players, and round info
- * 
+ *
  * Game Flow:
  * - voting-author: Players vote on who wrote each set of statements (all rounds, no reveals)
  * - results-author: Show ALL author results at once
@@ -74,7 +74,8 @@ export async function GET(
 		}
 
 		// Determine which round to use for vote checking based on phase
-		const isAuthorPhase = game.status === "voting-author" || game.status === "results-author";
+		const isAuthorPhase =
+			game.status === "voting-author" || game.status === "results-author";
 		const roundForVoteCheck = isAuthorPhase ? game.currentRound : truthRound;
 
 		// Get statements for current round (if in voting phase)
@@ -82,11 +83,7 @@ export async function GET(
 		let currentRoundPlayer = null;
 		if (
 			game.currentPlayerId &&
-			[
-				"voting-author",
-				"voting-truth",
-				"results-truth",
-			].includes(game.status)
+			["voting-author", "voting-truth", "results-truth"].includes(game.status)
 		) {
 			const statementsResult = await payload.find({
 				collection: "statements",
@@ -160,16 +157,16 @@ export async function GET(
 		// Get vote results for results phases
 		let voteResults = null;
 		let allAuthorResults = null;
-		
+
 		if (game.status === "results-author") {
 			// For results-author, show ALL author results for ALL rounds
 			const totalPlayers = playerOrder.length;
 			allAuthorResults = [];
-			
+
 			for (let round = 1; round <= totalPlayers; round++) {
 				const playerId = playerOrder[round - 1];
 				const player = players.docs.find((p) => p.id === playerId);
-				
+
 				// Get statements for this player
 				const statementsResult = await payload.find({
 					collection: "statements",
@@ -181,7 +178,7 @@ export async function GET(
 					},
 					sort: "order",
 				});
-				
+
 				// Get all votes for this round
 				const votes = await payload.find({
 					collection: "votes",
@@ -194,7 +191,7 @@ export async function GET(
 					},
 					depth: 1,
 				});
-				
+
 				allAuthorResults.push({
 					round,
 					playerId,
@@ -243,7 +240,7 @@ export async function GET(
 		const eligibleVoters = players.docs.filter(
 			(p) => p.id !== game.currentPlayerId,
 		).length;
-		
+
 		// Get current vote count based on phase
 		let currentVotes = { totalDocs: 0 };
 		if (game.status === "voting-author" && game.currentRound > 0) {
@@ -299,7 +296,10 @@ export async function GET(
 					}
 				: null,
 			currentRound:
-				(game.status === "voting-author" || game.status === "voting-truth" || game.status === "results-truth") && currentRoundPlayer
+				(game.status === "voting-author" ||
+					game.status === "voting-truth" ||
+					game.status === "results-truth") &&
+				currentRoundPlayer
 					? {
 							playerNickname: currentRoundPlayer?.nickname,
 							playerAvatarUrl: currentRoundPlayer

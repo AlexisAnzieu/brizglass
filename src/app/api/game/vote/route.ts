@@ -91,7 +91,8 @@ export async function POST(request: NextRequest) {
 
 		// Check if already voted this round
 		// For author votes, use currentRound; for truth votes, use truthRound
-		const roundToCheck = voteType === "author" ? game.currentRound : game.truthRound;
+		const roundToCheck =
+			voteType === "author" ? game.currentRound : game.truthRound;
 		const existingVotes = await payload.find({
 			collection: "votes",
 			where: {
@@ -161,7 +162,7 @@ export async function POST(request: NextRequest) {
 		let autoAdvanced = false;
 		let newStatus: GameStatus | undefined;
 		let newRound = game.currentRound;
-		let newTruthRound = game.truthRound;
+		const newTruthRound = game.truthRound;
 		let newCurrentPlayerId = game.currentPlayerId;
 
 		const playerOrder = (game.playerOrder as string[]) || [];
@@ -244,7 +245,8 @@ async function calculateAllAuthorPoints(
 
 		// Award 1 point to each correct voter
 		for (const vote of votes.docs) {
-			const voterId = typeof vote.voter === "object" ? vote.voter.id : vote.voter;
+			const voterId =
+				typeof vote.voter === "object" ? vote.voter.id : vote.voter;
 			const voter = await payload.findByID({
 				collection: "players",
 				id: voterId,

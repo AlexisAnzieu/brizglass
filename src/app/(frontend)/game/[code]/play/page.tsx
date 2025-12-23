@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePartySocket } from "@/hooks/usePartySocket";
 
 interface Statement {
@@ -128,7 +128,7 @@ export default function PlayPage() {
 	const [countdown, setCountdown] = useState<number | null>(null);
 	const countdownRef = useRef<NodeJS.Timeout | null>(null);
 	const hasAutoAdvancedRef = useRef<string | null>(null);
-	
+
 	// Final countdown state (5 seconds before showing results)
 	const [finalCountdown, setFinalCountdown] = useState<number | null>(null);
 	const [showFinalResults, setShowFinalResults] = useState(false);
@@ -159,20 +159,21 @@ export default function PlayPage() {
 	}, [code, router]);
 
 	// Use PartyKit for real-time updates
-	const { notifyPlayerReady, notifyVoteSubmitted, notifyPhaseChanged } = usePartySocket({
-		gameCode: code,
-		onGameUpdate: fetchStatus,
-		onPlayerJoined: fetchStatus,
-		onPlayerReady: fetchStatus,
-		onGameStarted: fetchStatus,
-		onVoteSubmitted: fetchStatus,
-		onPhaseChanged: fetchStatus,
-	});
+	const { notifyPlayerReady, notifyVoteSubmitted, notifyPhaseChanged } =
+		usePartySocket({
+			gameCode: code,
+			onGameUpdate: fetchStatus,
+			onPlayerJoined: fetchStatus,
+			onPlayerReady: fetchStatus,
+			onGameStarted: fetchStatus,
+			onVoteSubmitted: fetchStatus,
+			onPhaseChanged: fetchStatus,
+		});
 
 	// Auto-advance function for results phases
 	const autoAdvance = useCallback(async () => {
 		if (!gameStatus?.game.id) return;
-		
+
 		try {
 			const response = await fetch("/api/game/auto-advance", {
 				method: "POST",
@@ -207,22 +208,25 @@ export default function PlayPage() {
 
 	// Handle countdown timer for results phases
 	useEffect(() => {
-		const isResultsPhase = gameStatus?.game.status === "results-author" || gameStatus?.game.status === "results-truth";
+		const isResultsPhase =
+			gameStatus?.game.status === "results-author" ||
+			gameStatus?.game.status === "results-truth";
 		// Use truthRound for truth phase, currentRound for author phase
-		const roundForKey = gameStatus?.game.status === "results-truth" 
-			? gameStatus?.game.truthRound 
-			: gameStatus?.game.currentRound;
+		const roundForKey =
+			gameStatus?.game.status === "results-truth"
+				? gameStatus?.game.truthRound
+				: gameStatus?.game.currentRound;
 		const phaseKey = `${gameStatus?.game.status}-${roundForKey}`;
-		
+
 		if (isResultsPhase && hasAutoAdvancedRef.current !== phaseKey) {
 			// Start countdown when entering results phase
 			setCountdown(20);
-			
+
 			// Clear any existing interval
 			if (countdownRef.current) {
 				clearInterval(countdownRef.current);
 			}
-			
+
 			countdownRef.current = setInterval(() => {
 				setCountdown((prev) => {
 					if (prev === null || prev <= 1) {
@@ -248,18 +252,27 @@ export default function PlayPage() {
 				countdownRef.current = null;
 			}
 		}
-		
+
 		return () => {
 			if (countdownRef.current) {
 				clearInterval(countdownRef.current);
 				countdownRef.current = null;
 			}
 		};
-	}, [gameStatus?.game.status, gameStatus?.game.currentRound, gameStatus?.game.truthRound, autoAdvance]);
+	}, [
+		gameStatus?.game.status,
+		gameStatus?.game.currentRound,
+		gameStatus?.game.truthRound,
+		autoAdvance,
+	]);
 
 	// Show final results immediately if page is loaded with finished status
 	useEffect(() => {
-		if (gameStatus?.game.status === "finished" && !showFinalResults && finalCountdown === null) {
+		if (
+			gameStatus?.game.status === "finished" &&
+			!showFinalResults &&
+			finalCountdown === null
+		) {
 			setShowFinalResults(true);
 		}
 	}, [gameStatus?.game.status, showFinalResults, finalCountdown]);
@@ -540,7 +553,7 @@ export default function PlayPage() {
 									/>
 									<strong>{result.playerNickname}</strong>
 								</div>
-								
+
 								<div className="statements-mini">
 									{result.statements.map((statement, index) => (
 										<div key={statement.id} className="statement-mini">
@@ -694,7 +707,8 @@ export default function PlayPage() {
 			)}
 
 			{/* Game Finished */}
-			{game.status === "finished" && showFinalResults &&
+			{game.status === "finished" &&
+				showFinalResults &&
 				(() => {
 					const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 					const topScore = sortedPlayers[0]?.score ?? 0;

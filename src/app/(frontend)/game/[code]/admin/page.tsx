@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePartySocket } from "@/hooks/usePartySocket";
 
 interface Player {
@@ -102,7 +102,7 @@ export default function AdminPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const [actionLoading, setActionLoading] = useState(false);
-	
+
 	// Final countdown state
 	const [finalCountdown, setFinalCountdown] = useState<number | null>(null);
 	const [showFinalResults, setShowFinalResults] = useState(false);
@@ -149,9 +149,14 @@ export default function AdminPage() {
 	// Handle final countdown when game transitions to finished
 	useEffect(() => {
 		const currentStatus = gameStatus?.game.status;
-		
+
 		// If transitioning to finished and we haven't shown countdown yet
-		if (currentStatus === "finished" && previousStatusRef.current && previousStatusRef.current !== "finished" && !showFinalResults) {
+		if (
+			currentStatus === "finished" &&
+			previousStatusRef.current &&
+			previousStatusRef.current !== "finished" &&
+			!showFinalResults
+		) {
 			setFinalCountdown(5);
 			const interval = setInterval(() => {
 				setFinalCountdown((prev) => {
@@ -164,12 +169,16 @@ export default function AdminPage() {
 				});
 			}, 1000);
 		}
-		
+
 		// If page loaded with finished status, show results immediately
-		if (currentStatus === "finished" && previousStatusRef.current === null && !showFinalResults) {
+		if (
+			currentStatus === "finished" &&
+			previousStatusRef.current === null &&
+			!showFinalResults
+		) {
 			setShowFinalResults(true);
 		}
-		
+
 		previousStatusRef.current = currentStatus || null;
 	}, [gameStatus?.game.status, showFinalResults]);
 
@@ -293,19 +302,28 @@ export default function AdminPage() {
 						{gameStatus.game.status === "voting-author" && (
 							<>
 								<div className="round-info">
-									<h2>Phase Auteur - Joueur {gameStatus.game.currentRound} / {gameStatus.game.totalPlayers}</h2>
-									<p className="phase-description">Les joueurs devinent qui a écrit ces affirmations</p>
+									<h2>
+										Phase Auteur - Joueur {gameStatus.game.currentRound} /{" "}
+										{gameStatus.game.totalPlayers}
+									</h2>
+									<p className="phase-description">
+										Les joueurs devinent qui a écrit ces affirmations
+									</p>
 								</div>
 
 								{gameStatus.currentRound?.statements && (
 									<div className="statements-display">
 										<h3>Affirmations :</h3>
-										{gameStatus.currentRound.statements.map((statement, index) => (
-											<div key={statement.id} className="statement-card">
-												<span className="statement-number">{index + 1}</span>
-												<span className="statement-text">{statement.text}</span>
-											</div>
-										))}
+										{gameStatus.currentRound.statements.map(
+											(statement, index) => (
+												<div key={statement.id} className="statement-card">
+													<span className="statement-number">{index + 1}</span>
+													<span className="statement-text">
+														{statement.text}
+													</span>
+												</div>
+											),
+										)}
 									</div>
 								)}
 
@@ -327,59 +345,69 @@ export default function AdminPage() {
 						)}
 
 						{/* Results Author Phase - Show ALL results */}
-						{gameStatus.game.status === "results-author" && gameStatus.allAuthorResults && (
-							<>
-								<div className="round-info">
-									<h2>Résultats - Auteurs</h2>
-									<p className="phase-description">Voici qui a écrit chaque série d'affirmations</p>
-								</div>
+						{gameStatus.game.status === "results-author" &&
+							gameStatus.allAuthorResults && (
+								<>
+									<div className="round-info">
+										<h2>Résultats - Auteurs</h2>
+										<p className="phase-description">
+											Voici qui a écrit chaque série d'affirmations
+										</p>
+									</div>
 
-								<div className="all-author-results">
-									{gameStatus.allAuthorResults.map((result) => (
-										<div key={result.round} className="author-result-card">
-											<div className="author-reveal">
-												<PlayerAvatar
-													avatarUrl={result.playerAvatarUrl}
-													nickname={result.playerNickname}
-													size="medium"
-												/>
-												<strong>{result.playerNickname}</strong>
-											</div>
-											
-											<div className="statements-mini">
-												{result.statements.map((statement, index) => (
-													<div key={statement.id} className="statement-mini">
-														<span className="statement-number">{index + 1}</span>
-														<span className="statement-text">{statement.text}</span>
-													</div>
-												))}
-											</div>
+									<div className="all-author-results">
+										{gameStatus.allAuthorResults.map((result) => (
+											<div key={result.round} className="author-result-card">
+												<div className="author-reveal">
+													<PlayerAvatar
+														avatarUrl={result.playerAvatarUrl}
+														nickname={result.playerNickname}
+														size="medium"
+													/>
+													<strong>{result.playerNickname}</strong>
+												</div>
 
-											{result.votes.length > 0 && (
-												<div className="vote-results">
-													{result.votes.map((vote) => (
-														<div
-															key={`${result.round}-${vote.voter}`}
-															className={`vote-result ${vote.isCorrect ? "correct" : "incorrect"}`}
-														>
-															<span>{vote.voter}</span>
-															<span>→ {vote.votedPlayer}</span>
-															<span>{vote.isCorrect ? "✅" : "❌"}</span>
+												<div className="statements-mini">
+													{result.statements.map((statement, index) => (
+														<div key={statement.id} className="statement-mini">
+															<span className="statement-number">
+																{index + 1}
+															</span>
+															<span className="statement-text">
+																{statement.text}
+															</span>
 														</div>
 													))}
 												</div>
-											)}
-										</div>
-									))}
-								</div>
-							</>
-						)}
+
+												{result.votes.length > 0 && (
+													<div className="vote-results">
+														{result.votes.map((vote) => (
+															<div
+																key={`${result.round}-${vote.voter}`}
+																className={`vote-result ${vote.isCorrect ? "correct" : "incorrect"}`}
+															>
+																<span>{vote.voter}</span>
+																<span>→ {vote.votedPlayer}</span>
+																<span>{vote.isCorrect ? "✅" : "❌"}</span>
+															</div>
+														))}
+													</div>
+												)}
+											</div>
+										))}
+									</div>
+								</>
+							)}
 
 						{/* Voting Truth Phase */}
 						{gameStatus.game.status === "voting-truth" && (
 							<>
 								<div className="round-info">
-									<h2>Phase Vérité - Joueur {gameStatus.game.truthRound} / {gameStatus.game.totalPlayers}</h2>
+									<h2>
+										Phase Vérité - Joueur {gameStatus.game.truthRound} /{" "}
+										{gameStatus.game.totalPlayers}
+									</h2>
 									{gameStatus.currentRound && (
 										<p className="current-player-info">
 											Joueur actuel :{" "}
@@ -389,7 +417,9 @@ export default function AdminPage() {
 													nickname={gameStatus.currentRound.playerNickname}
 													size="medium"
 												/>
-												<strong>{gameStatus.currentRound.playerNickname}</strong>
+												<strong>
+													{gameStatus.currentRound.playerNickname}
+												</strong>
 											</span>
 										</p>
 									)}
@@ -398,12 +428,16 @@ export default function AdminPage() {
 								{gameStatus.currentRound?.statements && (
 									<div className="statements-display">
 										<h3>Quelle affirmation est VRAIE ?</h3>
-										{gameStatus.currentRound.statements.map((statement, index) => (
-											<div key={statement.id} className="statement-card">
-												<span className="statement-number">{index + 1}</span>
-												<span className="statement-text">{statement.text}</span>
-											</div>
-										))}
+										{gameStatus.currentRound.statements.map(
+											(statement, index) => (
+												<div key={statement.id} className="statement-card">
+													<span className="statement-number">{index + 1}</span>
+													<span className="statement-text">
+														{statement.text}
+													</span>
+												</div>
+											),
+										)}
 									</div>
 								)}
 
@@ -428,7 +462,10 @@ export default function AdminPage() {
 						{gameStatus.game.status === "results-truth" && (
 							<>
 								<div className="round-info">
-									<h2>Résultat Vérité - Joueur {gameStatus.game.truthRound} / {gameStatus.game.totalPlayers}</h2>
+									<h2>
+										Résultat Vérité - Joueur {gameStatus.game.truthRound} /{" "}
+										{gameStatus.game.totalPlayers}
+									</h2>
 									{gameStatus.currentRound && (
 										<p className="current-player-info">
 											Joueur :{" "}
@@ -438,7 +475,9 @@ export default function AdminPage() {
 													nickname={gameStatus.currentRound.playerNickname}
 													size="medium"
 												/>
-												<strong>{gameStatus.currentRound.playerNickname}</strong>
+												<strong>
+													{gameStatus.currentRound.playerNickname}
+												</strong>
 											</span>
 										</p>
 									)}
@@ -446,20 +485,24 @@ export default function AdminPage() {
 
 								{gameStatus.currentRound?.statements && (
 									<div className="statements-display">
-										{gameStatus.currentRound.statements.map((statement, index) => (
-											<div
-												key={statement.id}
-												className={`statement-card ${statement.isTrue !== undefined ? (statement.isTrue ? "true" : "false") : ""}`}
-											>
-												<span className="statement-number">{index + 1}</span>
-												<span className="statement-text">{statement.text}</span>
-												{statement.isTrue !== undefined && (
-													<span className="statement-truth">
-														{statement.isTrue ? "✅ VRAI" : "❌ FAUX"}
+										{gameStatus.currentRound.statements.map(
+											(statement, index) => (
+												<div
+													key={statement.id}
+													className={`statement-card ${statement.isTrue !== undefined ? (statement.isTrue ? "true" : "false") : ""}`}
+												>
+													<span className="statement-number">{index + 1}</span>
+													<span className="statement-text">
+														{statement.text}
 													</span>
-												)}
-											</div>
-										))}
+													{statement.isTrue !== undefined && (
+														<span className="statement-truth">
+															{statement.isTrue ? "✅ VRAI" : "❌ FAUX"}
+														</span>
+													)}
+												</div>
+											),
+										)}
 									</div>
 								)}
 
@@ -472,7 +515,9 @@ export default function AdminPage() {
 												className={`vote-result ${result.isCorrect ? "correct" : "incorrect"}`}
 											>
 												<span>{result.voter}</span>
-												<span>{result.isCorrect ? "✅ Correct !" : "❌ Faux"}</span>
+												<span>
+													{result.isCorrect ? "✅ Correct !" : "❌ Faux"}
+												</span>
 											</div>
 										))}
 									</div>
@@ -512,7 +557,8 @@ export default function AdminPage() {
 				</div>
 			)}
 
-			{gameStatus.game.status === "finished" && showFinalResults &&
+			{gameStatus.game.status === "finished" &&
+				showFinalResults &&
 				(() => {
 					const sortedPlayers = [...gameStatus.players].sort(
 						(a, b) => b.score - a.score,

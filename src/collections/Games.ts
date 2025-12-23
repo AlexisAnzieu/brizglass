@@ -4,19 +4,19 @@ import type { CollectionConfig } from "payload";
  * Games Collection
  *
  * Represents a brizglass game session.
- * 
+ *
  * Game Flow:
  * 1. Admin creates game -> status: 'lobby'
  * 2. Players join via code -> status: 'lobby'
  * 3. Players submit statements -> status: 'lobby'
  * 4. Admin starts game -> status: 'voting-author'
- * 
+ *
  * AUTHOR PHASE (no reveals between rounds):
  * 5. Players vote on who wrote player 1's statements -> voting-author (round 1)
  * 6. Players vote on who wrote player 2's statements -> voting-author (round 2)
  * ... continue for all N players
  * 7. Show ALL author results at once -> status: 'results-author'
- * 
+ *
  * TRUTH PHASE (reveal after each round):
  * 8. Players vote on player 1's true statement -> voting-truth (truthRound 1)
  * 9. Reveal player 1's truth -> results-truth
