@@ -110,7 +110,6 @@ export async function POST(request: NextRequest) {
 				sessionToken,
 				score: 0,
 				hasSubmittedStatements: false,
-				hasBeenGuessed: false,
 				...(avatarId && { avatar: avatarId }),
 			},
 		});

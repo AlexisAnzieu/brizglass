@@ -66,7 +66,7 @@ export async function POST() {
 				currentRound: 0,
 				truthRound: 0,
 				adminToken,
-			}
+			},
 		});
 
 		return NextResponse.json({
