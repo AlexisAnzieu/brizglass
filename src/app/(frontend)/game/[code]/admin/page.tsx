@@ -33,6 +33,13 @@ interface AuthorRoundResult {
 	}[];
 }
 
+interface VoterStatus {
+	id: string;
+	nickname: string;
+	avatarUrl: string | null;
+	hasVoted: boolean;
+}
+
 interface GameStatus {
 	game: {
 		id: string;
@@ -56,6 +63,7 @@ interface GameStatus {
 		}[];
 		votesReceived: number;
 		votesNeeded: number;
+		voterStatus?: VoterStatus[];
 	};
 	allAuthorResults?: AuthorRoundResult[];
 }
@@ -340,6 +348,26 @@ export default function AdminPage() {
 											}}
 										/>
 									</div>
+									{gameStatus.currentRound?.voterStatus && (
+										<div className="voter-status-list">
+											{gameStatus.currentRound.voterStatus.map((voter) => (
+												<div
+													key={voter.id}
+													className={`voter-status-item ${voter.hasVoted ? "voted" : "waiting"}`}
+												>
+													<PlayerAvatar
+														avatarUrl={voter.avatarUrl}
+														nickname={voter.nickname}
+														size="small"
+													/>
+													<span className="voter-name">{voter.nickname}</span>
+													<span className="voter-status-icon">
+														{voter.hasVoted ? "✅" : "⏳"}
+													</span>
+												</div>
+											))}
+										</div>
+									)}
 								</div>
 							</>
 						)}
@@ -454,6 +482,26 @@ export default function AdminPage() {
 											}}
 										/>
 									</div>
+									{gameStatus.currentRound?.voterStatus && (
+										<div className="voter-status-list">
+											{gameStatus.currentRound.voterStatus.map((voter) => (
+												<div
+													key={voter.id}
+													className={`voter-status-item ${voter.hasVoted ? "voted" : "waiting"}`}
+												>
+													<PlayerAvatar
+														avatarUrl={voter.avatarUrl}
+														nickname={voter.nickname}
+														size="small"
+													/>
+													<span className="voter-name">{voter.nickname}</span>
+													<span className="voter-status-icon">
+														{voter.hasVoted ? "✅" : "⏳"}
+													</span>
+												</div>
+											))}
+										</div>
+									)}
 								</div>
 							</>
 						)}

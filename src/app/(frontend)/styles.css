@@ -933,6 +933,50 @@ svg {
 	border-radius: var(--radius-full);
 }
 
+/* Voter Status List */
+.voter-status-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	justify-content: center;
+	margin-top: 20px;
+	padding: 16px;
+	background: var(--color-bg-elevated);
+	border-radius: var(--radius-md);
+	border: 1px solid var(--color-border);
+}
+
+.voter-status-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-radius: var(--radius-md);
+	background: var(--color-bg-card);
+	border: 1px solid var(--color-border);
+	transition: all 0.2s ease;
+}
+
+.voter-status-item.voted {
+	background: rgba(16, 185, 129, 0.15);
+	border-color: rgba(16, 185, 129, 0.4);
+}
+
+.voter-status-item.waiting {
+	background: rgba(251, 191, 36, 0.1);
+	border-color: rgba(251, 191, 36, 0.3);
+}
+
+.voter-name {
+	font-size: 0.9rem;
+	font-weight: 500;
+	color: var(--color-text);
+}
+
+.voter-status-icon {
+	font-size: 1rem;
+}
+
 /* Vote Results */
 .vote-results {
 	display: flex;
