@@ -64,8 +64,9 @@ export async function POST() {
 				code,
 				status: "lobby",
 				currentRound: 0,
+				truthRound: 0,
 				adminToken,
-			},
+			}
 		});
 
 		return NextResponse.json({
