@@ -502,26 +502,6 @@ export default function PlayPage() {
 							<p>
 								🎯 Ce sont VOS affirmations ! Attendez que les autres devinent.
 							</p>
-							{currentRound.voterStatus && (
-								<div className="voter-status-list">
-									{currentRound.voterStatus.map((voter) => (
-										<div
-											key={voter.id}
-											className={`voter-status-item ${voter.hasVoted ? "voted" : "waiting"}`}
-										>
-											<PlayerAvatar
-												avatarUrl={voter.avatarUrl}
-												nickname={voter.nickname}
-												size="small"
-											/>
-											<span className="voter-name">{voter.nickname}</span>
-											<span className="voter-status-icon">
-												{voter.hasVoted ? "✅" : "⏳"}
-											</span>
-										</div>
-									))}
-								</div>
-							)}
 						</div>
 					) : currentPlayer.hasVotedAuthor ? (
 						<div className="voted">
@@ -530,26 +510,6 @@ export default function PlayPage() {
 								Votes : {currentRound.votesReceived} /{" "}
 								{currentRound.votesNeeded}
 							</p>
-							{currentRound.voterStatus && (
-								<div className="voter-status-list">
-									{currentRound.voterStatus.map((voter) => (
-										<div
-											key={voter.id}
-											className={`voter-status-item ${voter.hasVoted ? "voted" : "waiting"}`}
-										>
-											<PlayerAvatar
-												avatarUrl={voter.avatarUrl}
-												nickname={voter.nickname}
-												size="small"
-											/>
-											<span className="voter-name">{voter.nickname}</span>
-											<span className="voter-status-icon">
-												{voter.hasVoted ? "✅" : "⏳"}
-											</span>
-										</div>
-									))}
-								</div>
-							)}
 						</div>
 					) : (
 						<div className="vote-options">

@@ -244,7 +244,8 @@ export async function GET(
 		// Get current votes with voter info for real-time status display
 		let currentVotesData: { totalDocs: number; voterIds: string[] } = { totalDocs: 0, voterIds: [] };
 		if (game.status === "voting-author" && game.currentRound > 0) {
-			const votesResult = await payload.find({
+			// For voting-author, only count votes (don't reveal who voted to avoid exposing the author)
+			const votesCount = await payload.count({
 				collection: "votes",
 				where: {
 					and: [
@@ -253,15 +254,13 @@ export async function GET(
 						{ voteType: { equals: "author" } },
 					],
 				},
-				limit: 100,
 			});
 			currentVotesData = {
-				totalDocs: votesResult.totalDocs,
-				voterIds: votesResult.docs.map((v) => 
-					typeof v.voter === "object" ? v.voter.id : v.voter
-				),
+				totalDocs: votesCount.totalDocs,
+				voterIds: [], // Don't expose voter IDs during author phase
 			};
 		} else if (game.status === "voting-truth" && truthRound > 0) {
+			// For voting-truth, we can show who voted since the author is already known
 			const votesResult = await payload.find({
 				collection: "votes",
 				where: {
@@ -281,13 +280,15 @@ export async function GET(
 			};
 		}
 
-		// Build voter status list
-		const voterStatus = eligibleVoters.map((p) => ({
-			id: p.id,
-			nickname: p.nickname,
-			avatarUrl: getAvatarUrl(p),
-			hasVoted: currentVotesData.voterIds.includes(p.id),
-		}));
+		// Build voter status list (only for voting-truth phase where author is already revealed)
+		const voterStatus = game.status === "voting-truth" 
+			? eligibleVoters.map((p) => ({
+					id: p.id,
+					nickname: p.nickname,
+					avatarUrl: getAvatarUrl(p),
+					hasVoted: currentVotesData.voterIds.includes(p.id),
+				}))
+			: undefined;
 
 		return NextResponse.json({
 			game: {
@@ -330,9 +331,9 @@ export async function GET(
 							playerId: game.currentPlayerId,
 							statements: currentStatements,
 							voteResults,
-						votesReceived: currentVotesData.totalDocs,
-						votesNeeded: eligibleVoters.length,
-						voterStatus,
+							votesReceived: currentVotesData.totalDocs,
+							votesNeeded: eligibleVoters.length,
+							...(voterStatus && { voterStatus }),
 						}
 					: null,
 			// All author results shown during results-author phase
